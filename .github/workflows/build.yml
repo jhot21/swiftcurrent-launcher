@@ -1,9 +1,10 @@
 name: Build
 
+# Pull requests only. The maintainer runs `task test` before pushing to main, and the release
+# workflow runs the same gate before building anything, so a push build would only repeat them.
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   # The screenshot baselines in app/src/test/snapshots were recorded on macOS, and Roborazzi
