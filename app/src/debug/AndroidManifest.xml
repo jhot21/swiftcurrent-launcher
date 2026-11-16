@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <!-- Debug builds only: stands in for a connected app (Signal-shaped rows) so the emulator, which has none,
+             can show the buttons. Exported because the system refused to resolve the launch (-91) while it was not, even from
+             Swiftcurrent's own uid. -->
+        <activity
+            android:name="me.jhot.swiftcurrent.debug.FakeConnectedAppActivity"
+            android:exported="true"
+            android:label="Fake Signal">
+            <!-- Opens contact data rows, not web links, so there is no URL for the app-link check to find. -->
+            <intent-filter tools:ignore="AppLinkUrlError">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.android.cursor.item/vnd.swiftcurrent.fake.message" />
+                <data android:mimeType="vnd.android.cursor.item/vnd.swiftcurrent.fake.voice" />
+                <data android:mimeType="vnd.android.cursor.item/vnd.swiftcurrent.fake.video" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

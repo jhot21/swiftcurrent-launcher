@@ -1,0 +1,82 @@
+version: '3'
+
+# Every task, and every Gradle device run under it, talks to the emulator and never to a phone.
+env:
+  ANDROID_SERIAL: emulator-5554
+
+vars:
+  AVD: Medium_Phone_API_36.1
+  SERIAL: emulator-5554
+  APK: app/build/outputs/apk/debug/app-debug.apk
+
+tasks:
+  build:
+    desc: Build the debug APK
+    cmds:
+      - ./gradlew assembleDebug
+
+  test:
+    desc: ktlint, JVM unit tests, screenshot baseline check and lint
+    # This task is the gate. Plain `test` does not compare screenshots, so verifyRoborazziDebug
+    # runs too. To accept an intended design change, re-record with
+    # `mise exec -- ./gradlew :app:recordRoborazziDebug` and commit the new PNGs.
+    cmds:
+      - task: ktlint
+      - ./gradlew test verifyRoborazziDebug lint
+
+  test:scripts:
+    desc: Run the release-version script tests
+    cmds:
+      - bash scripts/release-version.test.sh
+
+  ktlint:
+    desc: Check Kotlin style with ktlint (rules live in .editorconfig)
+    cmds:
+      - mise exec -- ktlint "**/*.kt" "**/*.kts" "!**/build/**"
+
+  format:
+    desc: Auto-fix what ktlint can
+    cmds:
+      - mise exec -- ktlint --format "**/*.kt" "**/*.kts" "!**/build/**"
+
+  emulator-up:
+    desc: Boot the emulator unless it is already running
+    cmds:
+      - |
+        if adb -s {{.SERIAL}} get-state >/dev/null 2>&1; then exit 0; fi
+        nohup "$ANDROID_HOME/emulator/emulator" -avd {{.AVD}} -no-snapshot -no-audio >/dev/null 2>&1 &
+        until [ "$(adb -s {{.SERIAL}} shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; do sleep 3; done
+
+  emulator-check:
+    internal: true
+    cmds:
+      - adb -s {{.SERIAL}} get-state
+
+  install-emulator:
+    desc: Install the debug APK on the emulator
+    deps: [build, emulator-check]
+    cmds:
+      - adb -s {{.SERIAL}} install -r {{.APK}}
+
+  test-device:
+    desc: Instrumented tests, emulator only
+    deps: [emulator-check]
+    cmds:
+      - ./gradlew connectedDebugAndroidTest -Pandroid.injected.device.serial={{.SERIAL}} {{.CLI_ARGS}}
+
+  bench:
+    desc: Macrobenchmarks on the emulator (trend only, never a comparison with a phone)
+    deps: [emulator-check]
+    # Macrobenchmark refuses emulators; the suppression is passed here and nowhere else, so a
+    # default run elsewhere still refuses. Emulator numbers show direction, not feel: the Niagara
+    # comparison runs on the phone after the owner switches the default launcher (Task 18).
+    cmds:
+      - mkdir -p docs/scratch/perf
+      - >-
+        ./gradlew :benchmark:connectedBenchmarkAndroidTest
+        -Pandroid.injected.device.serial={{.SERIAL}}
+        -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.suppressErrors=EMULATOR
+        {{.CLI_ARGS}}
+      - rm -rf docs/scratch/perf/results
+      - mkdir -p docs/scratch/perf/results
+      - cp -R benchmark/build/outputs/connected_android_test_additional_output/. docs/scratch/perf/results/ || true

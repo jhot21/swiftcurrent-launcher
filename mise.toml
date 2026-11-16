@@ -1,0 +1,6 @@
+[env]
+ANDROID_HOME = "{{ env.HOME }}/Library/Android/sdk"
+
+[tools]
+java = "temurin-17"
+ktlint = "1.8.0"

@@ -1,0 +1,30 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+indent_size = 4
+ktlint_code_style = intellij_idea
+max_line_length = 120
+# Compose composables are PascalCase functions.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+# The code base is hand-formatted in a dense style. These layout rules would rewrite most files
+# for no gain, so only the rules that catch real drift (imports, indentation, blank lines) stay on.
+ktlint_standard_argument-list-wrapping = disabled
+ktlint_standard_function-literal = disabled
+ktlint_standard_max-line-length = disabled
+ktlint_standard_statement-wrapping = disabled
+ktlint_standard_binary-expression-wrapping = disabled
+ktlint_standard_function-signature = disabled
+ktlint_standard_parameter-list-wrapping = disabled
+ktlint_standard_blank-line-between-when-conditions = disabled
+ktlint_standard_property-wrapping = disabled
+ktlint_standard_class-signature = disabled
+ktlint_standard_multiline-if-else = disabled
+ktlint_standard_multiline-loop = disabled
+ktlint_standard_enum-wrapping = disabled

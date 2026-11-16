@@ -1,0 +1,115 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "cd3ed50dcb66e6277851ea5a61aa43a1",
+    "entities": [
+      {
+        "tableName": "selection",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `resultId` TEXT NOT NULL, `kind` TEXT NOT NULL, `query` TEXT, `source` TEXT NOT NULL, `at` INTEGER NOT NULL, `actionId` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resultId",
+            "columnName": "resultId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "query",
+            "columnName": "query",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "at",
+            "columnName": "at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actionId",
+            "columnName": "actionId",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_selection_resultId",
+            "unique": false,
+            "columnNames": [
+              "resultId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_selection_resultId` ON `${TABLE_NAME}` (`resultId`)"
+          },
+          {
+            "name": "index_selection_query",
+            "unique": false,
+            "columnNames": [
+              "query"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_selection_query` ON `${TABLE_NAME}` (`query`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "launch_count",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`component` TEXT NOT NULL, `count` INTEGER NOT NULL, PRIMARY KEY(`component`))",
+        "fields": [
+          {
+            "fieldPath": "component",
+            "columnName": "component",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "count",
+            "columnName": "count",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "component"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'cd3ed50dcb66e6277851ea5a61aa43a1')"
+    ]
+  }
+}
