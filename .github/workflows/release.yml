@@ -105,21 +105,23 @@ jobs:
           keyAlias=$RELEASE_KEY_ALIAS
           keyPassword=$RELEASE_KEY_PASSWORD
           EOF
-          # AGP signs the debug variant with ~/.android/debug.keystore and makes a fresh one when
-          # it is missing, which would give every release a different debug certificate.
-          mkdir -p "$HOME/.android"
-          printf '%s' "$DEBUG_KEYSTORE_BASE64" | base64 -d > "$HOME/.android/debug.keystore"
+          # The debug APK is signed with the maintainer's debug key, passed to Gradle below. Left
+          # to AGP, the runner would sign it with a throwaway key of its own.
+          printf '%s' "$DEBUG_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/debug.keystore"
 
       - name: Build the release and debug APKs
         env:
           VERSION_NAME: ${{ steps.version.outputs.name }}
           VERSION_CODE: ${{ steps.version.outputs.code }}
         # -P overrides the defaults in app/build.gradle.kts.
-        run: ./gradlew assembleRelease assembleDebug -PVERSION_NAME="$VERSION_NAME" -PVERSION_CODE="$VERSION_CODE"
+        run: >
+          ./gradlew assembleRelease assembleDebug
+          -PVERSION_NAME="$VERSION_NAME" -PVERSION_CODE="$VERSION_CODE"
+          -PDEBUG_KEYSTORE="$RUNNER_TEMP/debug.keystore"
 
       - name: Remove signing material
         if: always()
-        run: rm -f release.keystore keystore.properties "$HOME/.android/debug.keystore"
+        run: rm -f release.keystore keystore.properties "$RUNNER_TEMP/debug.keystore"
 
       - name: Verify the APKs
         id: apk

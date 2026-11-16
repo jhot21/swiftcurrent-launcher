@@ -45,6 +45,12 @@ android {
     }
 
     signingConfigs {
+        // A published debug APK must carry the maintainer's own debug key, so it installs over the
+        // debug build on their phone. The release workflow passes that keystore as -PDEBUG_KEYSTORE;
+        // everywhere else the debug config keeps AGP's default (~/.android/debug.keystore).
+        (findProperty("DEBUG_KEYSTORE") as String?)?.let { path ->
+            getByName("debug") { storeFile = file(path) }
+        }
         if (hasSigningConfig) {
             create("release") {
                 storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
