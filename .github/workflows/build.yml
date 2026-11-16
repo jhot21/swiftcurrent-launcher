@@ -6,6 +6,36 @@ on:
   pull_request:
 
 jobs:
+  # The screenshot baselines in app/src/test/snapshots were recorded on macOS, and Roborazzi
+  # compares pixel for pixel, so the gate runs on a macOS runner: Linux draws text and shadows
+  # slightly differently and fails eight of them. Plain `test` does not compare screenshots, so
+  # verifyRoborazziDebug runs too, as in `task test`.
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests and screenshots
+        run: ./gradlew test verifyRoborazziDebug
+
+      # What a mismatch looks like: the compare images show the baseline, the new render and the diff.
+      - name: Keep the screenshot comparisons
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-comparisons
+          path: |
+            app/build/outputs/roborazzi
+            app/build/reports/tests
+          if-no-files-found: ignore
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -17,10 +47,6 @@ jobs:
           java-version: '17'
 
       - uses: gradle/actions/setup-gradle@v4
-
-      # The same gate as `task test`: plain `test` does not compare screenshots.
-      - name: Unit tests and screenshots
-        run: ./gradlew test verifyRoborazziDebug
 
       - name: Lint
         run: ./gradlew lint
