@@ -2,6 +2,7 @@ package me.jhot.swiftcurrent.shell
 
 import android.content.Intent
 import android.net.Uri
+import android.os.SystemClock
 import android.provider.AlarmClock
 import android.provider.Settings
 import android.view.ViewConfiguration
@@ -469,7 +470,11 @@ private fun ShellContent(deps: LauncherDependencies, model: ShellData, state: Sh
                 }
                 AppListScreen(
                     sections = sections,
-                    onLaunch = { launchComponent(it.component); session.navigate(Screen.Home) },
+                    onLaunch = {
+                        launchComponent(it.component)
+                        session.markListLaunch(SystemClock.elapsedRealtime())
+                        session.navigate(Screen.Home)
+                    },
                     onSearch = { session.navigate(Screen.Search) },
                     onSettings = { state.openSettings(SettingsRoute.Root); session.navigate(Screen.Settings) },
                     onScrubTap = scrubTaps::onScrubTap,
