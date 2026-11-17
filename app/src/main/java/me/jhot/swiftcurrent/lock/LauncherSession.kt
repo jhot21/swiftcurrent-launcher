@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.update
 
 enum class Screen { Home, AppList, Search, Settings, Editor, Setup }
 
+/** How long after launching from the app list a plain return (Back) reopens the list instead of Home. */
+const val LIST_RETURN_WINDOW_MS = 10_000L
+
 /** How setup was opened: by the first-run check (Done/Skip mark it seen) or from Settings (they just go back). */
 enum class SetupOrigin { FirstRun, Settings }
 
@@ -41,7 +44,27 @@ class LauncherSession {
         _screen.value = if (_screen.value == Screen.Home) Screen.Search else Screen.Home
     }
 
+    /** Set when an app is launched from the list, so a quick Back out of it can reopen the list. */
+    @Volatile
+    private var listLaunchAt: Long? = null
+
+    fun markListLaunch(nowMs: Long) {
+        listLaunchAt = nowMs
+    }
+
+    fun clearListReturn() {
+        listLaunchAt = null
+    }
+
+    /** The launcher came back with no Home intent (Back from the app): within the window, reopen the list. */
+    fun onReturnedWithoutHome(nowMs: Long) {
+        val at = listLaunchAt ?: return
+        listLaunchAt = null
+        if (nowMs - at < LIST_RETURN_WINDOW_MS) _screen.value = Screen.AppList
+    }
+
     fun onScreenOff() {
+        listLaunchAt = null
         _screen.value = Screen.Home
         _resetToken.update { it + 1 }
     }
