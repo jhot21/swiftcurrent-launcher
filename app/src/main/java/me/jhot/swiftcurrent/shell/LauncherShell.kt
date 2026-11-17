@@ -471,8 +471,8 @@ private fun ShellContent(deps: LauncherDependencies, model: ShellData, state: Sh
                 AppListScreen(
                     sections = sections,
                     onLaunch = {
-                        launchComponent(it.component)
-                        session.markListLaunch(SystemClock.elapsedRealtime())
+                        // Marked on success only: a failed or dropped launch leaves nothing to come back from.
+                        launchComponent(it.component) { session.markListLaunch(SystemClock.elapsedRealtime()) }
                         session.navigate(Screen.Home)
                     },
                     onSearch = { session.navigate(Screen.Search) },
