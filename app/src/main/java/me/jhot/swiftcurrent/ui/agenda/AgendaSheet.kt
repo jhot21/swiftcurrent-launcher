@@ -63,7 +63,7 @@ fun AgendaSheet(
     val dateFormat = remember(locale) {
         DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "EEEMMMd"), locale)
     }
-    SheetScaffold(title = stringResource(R.string.agenda_title), onDismiss = onDismiss) {
+    SheetScaffold(title = stringResource(R.string.agenda_title), onDismiss = onDismiss, pinHeader = true) {
         Column(Modifier.testTag("agenda-sheet"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (days.none { it.events.isNotEmpty() }) {
                 AppText(stringResource(R.string.agenda_empty), AppType.body, Modifier.padding(start = 4.dp), color = Tokens.dimText)

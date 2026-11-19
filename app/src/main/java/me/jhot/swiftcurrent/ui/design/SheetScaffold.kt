@@ -38,6 +38,8 @@ private const val SCRIM_ALPHA = 0.6f
 fun SheetScaffold(
     title: String,
     onDismiss: () -> Unit,
+    /** Keep the handle and title in place and scroll only [content], for long lists. */
+    pinHeader: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BackHandler(onBack = onDismiss)
@@ -61,7 +63,7 @@ fun SheetScaffold(
                 .navigationBarsPadding()
                 // A sheet with a text field rises above the keyboard; without one this adds nothing.
                 .imePadding()
-                .verticalScroll(rememberScrollState())
+                .then(if (pinHeader) Modifier else Modifier.verticalScroll(rememberScrollState()))
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -71,7 +73,15 @@ fun SheetScaffold(
                 SheetHandle()
                 AppText(title, AppType.title, Modifier.padding(top = 20.dp, bottom = 12.dp, start = 4.dp))
             }
-            content()
+            if (pinHeader) {
+                Column(
+                    Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    content = content,
+                )
+            } else {
+                content()
+            }
         }
     }
 }
