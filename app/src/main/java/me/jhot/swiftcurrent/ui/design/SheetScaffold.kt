@@ -40,6 +40,8 @@ fun SheetScaffold(
     onDismiss: () -> Unit,
     /** Keep the handle and title in place and scroll only [content], for long lists. */
     pinHeader: Boolean = false,
+    /** A control at the end of the title row, such as an add button. */
+    action: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BackHandler(onBack = onDismiss)
@@ -71,7 +73,10 @@ fun SheetScaffold(
             // Dragging the handle or the title down closes the sheet, as a bottom sheet is expected to.
             Column(Modifier.dragSheet(drag)) {
                 SheetHandle()
-                AppText(title, AppType.title, Modifier.padding(top = 20.dp, bottom = 12.dp, start = 4.dp))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    AppText(title, AppType.title, Modifier.weight(1f).padding(top = 20.dp, bottom = 12.dp, start = 4.dp))
+                    action?.invoke()
+                }
             }
             if (pinHeader) {
                 Column(

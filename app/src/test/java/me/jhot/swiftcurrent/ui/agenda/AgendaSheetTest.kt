@@ -4,11 +4,13 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import me.jhot.swiftcurrent.agenda.AgendaDay
 import me.jhot.swiftcurrent.agenda.AgendaEvent
@@ -72,12 +74,31 @@ class AgendaSheetTest {
     }
 
     @Test
-    fun each_day_has_a_new_event_row_that_reports_its_date() {
+    fun one_new_event_button_in_the_header_reports_today() {
         val picked = mutableListOf<LocalDate>()
         show(onNewEvent = { picked += it })
-        assertEquals(3, compose.onAllNodesWithTag("agenda-new-event").fetchSemanticsNodes().size)
-        compose.onAllNodesWithTag("agenda-new-event")[1].performClick()
-        assertEquals(listOf(LocalDate.of(2026, 11, 9)), picked)
+        assertEquals(1, compose.onAllNodesWithTag("agenda-new-event").fetchSemanticsNodes().size)
+        compose.onNodeWithTag("agenda-new-event").performClick()
+        assertEquals(listOf(LocalDate.of(2026, 11, 8)), picked)
+    }
+
+    @Test
+    fun the_new_event_button_is_still_there_when_the_agenda_is_empty() {
+        val picked = mutableListOf<LocalDate>()
+        show(emptyList(), onNewEvent = { picked += it })
+        compose.onNodeWithTag("agenda-new-event").performClick()
+        assertEquals(listOf(LocalDate.of(2026, 11, 8)), picked)
+    }
+
+    @Test
+    fun long_pressing_the_new_event_button_shows_a_tooltip_and_does_not_add_an_event() {
+        val picked = mutableListOf<LocalDate>()
+        show(onNewEvent = { picked += it })
+        // The button is described by its label, but the visible text only exists once the tooltip is up.
+        assertEquals(0, compose.onAllNodesWithText("New event").fetchSemanticsNodes().size)
+        compose.onNodeWithTag("agenda-new-event").performTouchInput { longClick() }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("New event").fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(emptyList<LocalDate>(), picked)
     }
 
     @Test
