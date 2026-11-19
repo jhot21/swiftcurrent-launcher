@@ -19,14 +19,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberBasicTooltipState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -125,8 +128,9 @@ private fun EventRow(event: AgendaEvent, title: String, detail: String?, onClick
 @Composable
 private fun NewEventButton(onClick: () -> Unit) {
     val label = stringResource(R.string.agenda_new_event)
+    val edge = with(LocalDensity.current) { 16.dp.roundToPx() }
     BasicTooltipBox(
-        positionProvider = remember { BelowAnchorPositionProvider },
+        positionProvider = remember(edge) { BelowAnchorPositionProvider(edge) },
         state = rememberBasicTooltipState(isPersistent = false),
         tooltip = {
             AppText(
@@ -136,7 +140,7 @@ private fun NewEventButton(onClick: () -> Unit) {
         },
     ) {
         Box(
-            Modifier.size(48.dp).testTag("agenda-new-event")
+            Modifier.size(48.dp).clip(CircleShape).testTag("agenda-new-event")
                 .clickable(role = Role.Button, onClickLabel = label, onClick = onClick)
                 .semantics { contentDescription = label },
             contentAlignment = Alignment.Center,
@@ -151,9 +155,9 @@ private fun NewEventButton(onClick: () -> Unit) {
 }
 
 /** Centers the tooltip under the button, kept inside the window. */
-private object BelowAnchorPositionProvider : PopupPositionProvider {
+private class BelowAnchorPositionProvider(private val edge: Int) : PopupPositionProvider {
     override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
-        val x = (anchorBounds.center.x - popupContentSize.width / 2).coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0))
+        val x = (anchorBounds.center.x - popupContentSize.width / 2).coerceIn(edge, (windowSize.width - popupContentSize.width - edge).coerceAtLeast(edge))
         return IntOffset(x, anchorBounds.bottom)
     }
 }
