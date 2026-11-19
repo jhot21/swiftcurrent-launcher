@@ -41,10 +41,6 @@ Comments here explain *why*, not *what* — several parts of this codebase look
 wrong until you know the constraint that shaped them (see `docs/ARCHITECTURE.md`).
 If you change one of those, update the comment with it.
 
-## Translations
-
-See [TRANSLATING.md](TRANSLATING.md).
-
 ## Tests
 
 - `app/src/test/` runs on the JVM with `./gradlew test`: plain logic tests, plus Robolectric and

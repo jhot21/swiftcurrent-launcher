@@ -79,8 +79,7 @@ You need JDK 17 and an Android SDK with platform 35.
 ```
 
 See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for the full build and contribution
-notes, [ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the code fits together, and
-[TRANSLATING.md](docs/TRANSLATING.md) to help with translations.
+notes and [ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the code fits together.
 
 ## Credits
 
