@@ -15,9 +15,14 @@ The version name is the tag without the `v`. The version code is
 for `beta.N`, so a beta ranks below an rc, which ranks below the final. The rules live in
 `scripts/release-version.sh` and are tested by `task test:scripts`.
 
+Run `task test` first. Then push the tag by itself:
+
 ```bash
-git tag v0.1.0 && git push origin v0.1.0
+git tag vX.Y.Z && git push origin vX.Y.Z
 ```
+
+Push the one tag, never `git push --tags`. A local build outside the workflow keeps the default
+version (`0.1.0`, code 1) from `app/build.gradle.kts`.
 
 The workflow runs lint, unit tests and the screenshot check, builds both variants with the derived
 version, and refuses to publish unless each APK carries the expected certificate, version name
