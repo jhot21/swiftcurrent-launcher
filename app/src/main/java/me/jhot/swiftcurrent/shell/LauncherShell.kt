@@ -1105,7 +1105,7 @@ private fun EditorHost(
         if (picking) {
             CreatorPicker(
                 creators = pickable,
-                onPick = { picking = false; if (it.isWebLink) webLinkFor = it else create(it) },
+                onPick = { picking = false; if (it.isLink) webLinkFor = it else create(it) },
                 onDismiss = { picking = false },
                 iconFor = { c -> withContext(io) { deps.creators.icon(c) } },
             )

@@ -89,7 +89,7 @@ class DefaultDependencies(context: Context, override val session: LauncherSessio
             needsDefaultHome = app.getString(R.string.shortcut_launch_needs_default_home),
         ),
     )
-    override val creators: CreatorDiscovery = PackageManagerCreatorDiscovery(app.packageManager, app.packageName, app.getString(R.string.shortcut_web_link))
+    override val creators: CreatorDiscovery = PackageManagerCreatorDiscovery(app.packageManager, app.packageName, app.getString(R.string.shortcut_web_link), app.getString(R.string.shortcut_chat_link))
     override val userShortcuts: UserShortcuts = UserShortcuts.create(app)
     override val contacts: ContactReader = ContentResolverContactReader(app, AndroidConnectedAppResolver(app))
     override val calendar: CalendarRepository = ContentResolverCalendarRepository(app)

@@ -95,7 +95,7 @@ fun AppShortcutsHost(
                 onDelete = { row ->
                     scope.launch { deps.userShortcuts.delete(row.id, model::update) }
                 },
-                onCreate = { if (it.isWebLink) webLinkFor = it else create(it) },
+                onCreate = { if (it.isLink) webLinkFor = it else create(it) },
                 onGrantShortcuts = { start(Intent(Settings.ACTION_HOME_SETTINGS)) },
                 onGrantContacts = { start(appDetailsIntent(context.packageName)) },
             ),

@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -22,10 +23,12 @@ import kotlinx.coroutines.withContext
 import me.jhot.swiftcurrent.R
 import me.jhot.swiftcurrent.core.UserShortcut
 import me.jhot.swiftcurrent.shortcuts.AddOutcome
+import me.jhot.swiftcurrent.shortcuts.ChatLinks
 import me.jhot.swiftcurrent.shortcuts.Creator
 import me.jhot.swiftcurrent.shortcuts.RejectReason
 import me.jhot.swiftcurrent.shortcuts.WebLinks
 import me.jhot.swiftcurrent.shortcuts.copiedWebAddress
+import me.jhot.swiftcurrent.ui.editor.LinkKind
 import me.jhot.swiftcurrent.ui.editor.WebLinkSheet
 
 /** The text for every way an add can end other than success, resolved once so both entry points say the same thing. */
@@ -122,8 +125,14 @@ internal fun rememberShortcutCreator(
 
 /** Remembers which browser's Web link form is open, across recreation; null when none is. */
 internal val WebLinkCreatorSaver = androidx.compose.runtime.saveable.Saver<Creator?, List<String>>(
-    save = { c -> c?.let { listOf(it.packageName, it.appLabel, it.label) }.orEmpty() },
-    restore = { l -> if (l.size == 3) Creator.webLink(l[0], l[1], l[2]) else null },
+    save = { c -> c?.let { listOf(it.packageName, it.appLabel, it.label, if (it.isChatLink) "chat" else "web") }.orEmpty() },
+    restore = { l ->
+        when {
+            l.size == 4 && l[3] == "chat" -> Creator.chatLink(l[0], l[1], l[2])
+            l.size == 4 -> Creator.webLink(l[0], l[1], l[2])
+            else -> null
+        }
+    },
 )
 
 /**
@@ -151,12 +160,25 @@ internal fun WebLinkHost(
     if (creator == null) return
     // Read once when the form opens: the text on the clipboard then is what the owner just copied.
     val copied = remember(creator) { context.getSystemService(android.content.ClipboardManager::class.java)?.let(::copiedWebAddress) }
+    val chat = creator.isChatLink
+    val defaultChatName = stringResource(R.string.chat_link_default_name)
+    // Chat's address carries no name, but Gmail's own shortcut for a conversation has the same id, so a
+    // conversation it has recently shown can be named from that. Read once, off the main thread.
+    val known by produceState<Map<String, String>>(emptyMap(), creator) {
+        if (chat) value = withContext(io) { deps.shortcuts.entries().filter { it.packageName in Creator.CHAT_PACKAGES }.associate { it.id to it.label } }
+    }
     WebLinkSheet(
         browserLabel = creator.appLabel,
         clipboardUrl = copied,
         onDismiss = onDismiss,
-        onSave = { url, name ->
-            val link = WebLinks.parse(url) ?: return@WebLinkSheet
+        kind = if (chat) LinkKind.Chat else LinkKind.Web,
+        parse = if (chat) ({ ChatLinks.parse(it)?.link }) else WebLinks::parse,
+        isAddress = if (chat) ({ ChatLinks.parse(it) != null }) else WebLinks::isWebAddress,
+        nameHint = if (chat) ({ link -> known[link.display.substringAfterLast('/')] ?: defaultChatName }) else ({ it.host }),
+        onSave = { url, typed ->
+            val chatLink = if (chat) ChatLinks.parse(url) else null
+            val link = (if (chat) chatLink?.link else WebLinks.parse(url)) ?: return@WebLinkSheet
+            val name = if (chat && typed.isBlank()) known[chatLink?.id] ?: defaultChatName else typed
             onDismiss()
             scope.launch {
                 try {

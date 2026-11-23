@@ -13,6 +13,9 @@ enum class CreatorKind {
 
     /** Ours: a web link made in an in-app form, bound to one browser. Never launched as an activity. */
     WebLink,
+
+    /** Ours: a Google Chat conversation link, bound to the Chat-capable app that opens it. Never launched as an activity. */
+    ChatLink,
 }
 
 /**
@@ -27,15 +30,30 @@ data class Creator(
     val kind: CreatorKind = CreatorKind.External,
 ) {
     val isWebLink: Boolean get() = kind == CreatorKind.WebLink
+    val isChatLink: Boolean get() = kind == CreatorKind.ChatLink
+
+    /** Made in one of our own forms rather than by another app's activity. */
+    val isLink: Boolean get() = kind != CreatorKind.External
 
     val packageName: String
-        get() = if (isWebLink) component.removePrefix(WEB_LINK_PREFIX) else component.substringBefore('/')
+        get() = when (kind) {
+            CreatorKind.WebLink -> component.removePrefix(WEB_LINK_PREFIX)
+            CreatorKind.ChatLink -> component.removePrefix(CHAT_LINK_PREFIX)
+            CreatorKind.External -> component.substringBefore('/')
+        }
 
     companion object {
         private const val WEB_LINK_PREFIX = "weblink:"
+        private const val CHAT_LINK_PREFIX = "chatlink:"
 
         fun webLink(browserPackage: String, browserLabel: String, label: String) =
             Creator("$WEB_LINK_PREFIX$browserPackage", label, browserLabel, CreatorKind.WebLink)
+
+        fun chatLink(appPackage: String, appLabel: String, label: String) =
+            Creator("$CHAT_LINK_PREFIX$appPackage", label, appLabel, CreatorKind.ChatLink)
+
+        /** The apps that answer a `chat.google.com` conversation link: Gmail, and the standalone Chat app. */
+        val CHAT_PACKAGES = listOf("com.google.android.gm", "com.google.android.apps.dynamite")
     }
 }
 
@@ -54,11 +72,12 @@ class PackageManagerCreatorDiscovery(
     private val packageManager: PackageManager,
     private val ownPackage: String,
     private val webLinkLabel: String,
+    private val chatLinkLabel: String = "Google Chat link",
     // A seam so a test can see the flags a query was made with; the platform's answer cannot be faked by flags.
     private val queryActivities: (Intent, Int) -> List<ResolveInfo> = { intent, flags -> packageManager.queryIntentActivities(intent, flags) },
 ) : CreatorDiscovery {
     override fun creators(): List<Creator> =
-        (external() + webLinks())
+        (external() + webLinks() + chatLinks())
             .distinct()
             .sortedWith(
                 compareBy<Creator, String>(String.CASE_INSENSITIVE_ORDER) { it.appLabel }
@@ -90,8 +109,21 @@ class PackageManagerCreatorDiscovery(
                 Creator.webLink(a.packageName, appLabel, webLinkLabel)
             }
 
+    // Only an installed app that really answers a Chat link is offered, so the row never leads to a dead end.
+    private fun chatLinks(): List<Creator> = Creator.CHAT_PACKAGES.mapNotNull { pkg ->
+        val probe = Intent(Intent.ACTION_VIEW, Uri.parse("https://chat.google.com/room/AAAAAAAAAAA"))
+            .addCategory(Intent.CATEGORY_BROWSABLE).setPackage(pkg)
+        if (queryActivities(probe, 0).isEmpty()) return@mapNotNull null
+        val appLabel = try {
+            packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
+        } catch (e: PackageManager.NameNotFoundException) {
+            return@mapNotNull null
+        }
+        Creator.chatLink(pkg, appLabel, chatLinkLabel)
+    }
+
     override fun icon(creator: Creator): Drawable? = try {
-        if (creator.isWebLink) {
+        if (creator.isLink) {
             packageManager.getApplicationInfo(creator.packageName, 0).loadIcon(packageManager)
         } else {
             val component = ComponentName.unflattenFromString(creator.component)

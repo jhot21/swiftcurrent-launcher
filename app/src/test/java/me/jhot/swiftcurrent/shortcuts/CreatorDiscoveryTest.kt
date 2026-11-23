@@ -186,10 +186,31 @@ class CreatorDiscoveryTest {
             seen += intent to flags
             emptyList()
         }.creators()
-        val browserQuery = seen.single { it.first.action == Intent.ACTION_VIEW }
+        val browserQuery = seen.single { it.first.action == Intent.ACTION_VIEW && it.first.`package` == null }
         assertEquals(
             "a web VIEW query without MATCH_ALL lists only the default browser",
             android.content.pm.PackageManager.MATCH_ALL, browserQuery.second and android.content.pm.PackageManager.MATCH_ALL,
         )
+    }
+
+    @Test
+    fun a_chat_link_is_offered_only_for_an_installed_app_that_answers_chat_links() {
+        install("com.google.android.gm", "Gmail")
+        install("com.google.android.apps.dynamite", "Chat")
+        val answering = setOf("com.google.android.gm")
+        val found = PackageManagerCreatorDiscovery(pm, context.packageName, "Web link", "Google Chat link") { intent, _ ->
+            if (intent.`package` in answering) listOf(android.content.pm.ResolveInfo()) else emptyList()
+        }.creators()
+        assertEquals(listOf(Creator.chatLink("com.google.android.gm", "Gmail", "Google Chat link")), found)
+    }
+
+    @Test
+    fun a_chat_link_creator_is_a_link_but_not_a_web_link() {
+        val chat = Creator.chatLink("com.google.android.gm", "Gmail", "Google Chat link")
+        assertEquals(true, chat.isChatLink)
+        assertEquals(true, chat.isLink)
+        assertEquals(false, chat.isWebLink)
+        assertEquals("com.google.android.gm", chat.packageName)
+        assertEquals(false, Creator("p/p.A", "A", "P").isLink)
     }
 }

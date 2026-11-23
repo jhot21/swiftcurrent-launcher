@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import me.jhot.swiftcurrent.R
 import me.jhot.swiftcurrent.core.Renames
+import me.jhot.swiftcurrent.shortcuts.WebLink
 import me.jhot.swiftcurrent.shortcuts.WebLinks
 import me.jhot.swiftcurrent.ui.design.AppText
 import me.jhot.swiftcurrent.ui.design.AppType
@@ -42,6 +43,9 @@ import me.jhot.swiftcurrent.ui.design.Tokens
 
 private const val MAX_URL_LENGTH = 2048
 
+/** Which wording and address rules the form uses. */
+enum class LinkKind { Web, Chat }
+
 /**
  * The form behind a browser's "Web link" row. [onSave] gets the address and name as typed: the caller parses
  * the address again, this sheet only keeps Save off until it parses. [clipboardUrl] prefills the address when
@@ -49,10 +53,21 @@ private const val MAX_URL_LENGTH = 2048
  * caller falls back to the host, which the name field shows as its hint.
  */
 @Composable
-fun WebLinkSheet(browserLabel: String, clipboardUrl: String?, onSave: (url: String, name: String) -> Unit, onDismiss: () -> Unit) {
-    var url by rememberSaveable { mutableStateOf(clipboardUrl?.trim()?.takeIf(WebLinks::isWebAddress).orEmpty()) }
+fun WebLinkSheet(
+    browserLabel: String,
+    clipboardUrl: String?,
+    onSave: (url: String, name: String) -> Unit,
+    onDismiss: () -> Unit,
+    // The same form serves a Google Chat link: what differs is the wording, what counts as an address
+    // (and so what a copied link may prefill), and the name the field offers once there is one.
+    kind: LinkKind = LinkKind.Web,
+    parse: (String) -> WebLink? = WebLinks::parse,
+    isAddress: (String) -> Boolean = WebLinks::isWebAddress,
+    nameHint: (WebLink) -> String = { it.host },
+) {
+    var url by rememberSaveable { mutableStateOf(clipboardUrl?.trim()?.takeIf(isAddress).orEmpty()) }
     var name by rememberSaveable { mutableStateOf("") }
-    val link = WebLinks.parse(url)
+    val link = parse(url)
     val canSave = link != null
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
@@ -60,9 +75,15 @@ fun WebLinkSheet(browserLabel: String, clipboardUrl: String?, onSave: (url: Stri
         if (canSave) onSave(url, name)
     }
 
-    SheetScaffold(title = stringResource(R.string.web_link_title, browserLabel), onDismiss = onDismiss) {
-        val errorMessage = stringResource(R.string.web_link_error).takeIf { url.isNotBlank() && link == null }
-        val urlLabel = stringResource(R.string.web_link_url_hint)
+    val chat = kind == LinkKind.Chat
+    val title = if (chat) stringResource(R.string.chat_link_title, browserLabel) else stringResource(R.string.web_link_title, browserLabel)
+    SheetScaffold(title = title, onDismiss = onDismiss) {
+        if (chat) {
+            AppText(stringResource(R.string.chat_link_instructions), AppType.label, Modifier.testTag("chat-link-instructions").padding(start = 4.dp), color = Tokens.dimText)
+        }
+        val error = stringResource(if (chat) R.string.chat_link_error else R.string.web_link_error)
+        val errorMessage = error.takeIf { url.isNotBlank() && link == null }
+        val urlLabel = stringResource(if (chat) R.string.chat_link_url_hint else R.string.web_link_url_hint)
         Field(
             value = url, onChange = { url = it.filterNot { c -> c.isISOControl() }.take(MAX_URL_LENGTH) },
             hint = urlLabel, label = urlLabel, errorText = errorMessage, tag = "web-link-url", keyboardType = KeyboardType.Uri,
@@ -80,7 +101,7 @@ fun WebLinkSheet(browserLabel: String, clipboardUrl: String?, onSave: (url: Stri
         Field(
             value = name, onChange = { name = Renames.limit(it) },
             // The visible hint becomes the host once the address is valid; the label does not change.
-            hint = link?.host ?: nameLabel, label = nameLabel, hintTag = if (link != null) "web-link-name-hint" else null,
+            hint = link?.let(nameHint) ?: nameLabel, label = nameLabel, hintTag = if (link != null) "web-link-name-hint" else null,
             tag = "web-link-name", keyboardType = KeyboardType.Text, ime = ImeAction.Done, onDone = ::save,
         )
         Box(

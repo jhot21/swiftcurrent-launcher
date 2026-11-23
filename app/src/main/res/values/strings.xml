@@ -94,6 +94,12 @@
     <string name="web_link_url_hint">Web address</string>
     <string name="web_link_name_hint">Name</string>
     <string name="web_link_error">Enter a web address, like example.com</string>
+    <string name="shortcut_chat_link">Google Chat link</string>
+    <string name="chat_link_title">Google Chat link in %1$s</string>
+    <string name="chat_link_instructions">Open the conversation in Gmail or Google Chat on the web, then copy its address from the browser and paste it here.</string>
+    <string name="chat_link_url_hint">Conversation link</string>
+    <string name="chat_link_error">That is not a Google Chat conversation link</string>
+    <string name="chat_link_default_name">Google Chat conversation</string>
     <string name="web_link_save">Add</string>
     <string name="shortcut_picker_empty">No app offers to make shortcuts</string>
     <string name="shortcut_rejected_no_intent">That app didn\u2019t return a shortcut</string>
