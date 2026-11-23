@@ -15,6 +15,16 @@ The version name is the tag without the `v`. The version code is
 for `beta.N`, so a beta ranks below an rc, which ranks below the final. The rules live in
 `scripts/release-version.sh` and are tested by `task test:scripts`.
 
+Worked examples (`scripts/release-version.sh <tag>`): `v0.2.0-rc.5` is code 20055, `v0.3.0-beta.1`
+is 30011, `v0.3.0` would be 30099. A device only accepts an update with a higher code, so a local
+build (code 1) cannot be installed over a published one. To test a build on a device that has a
+release on it, pass the code the tag will get:
+
+```bash
+eval "$(scripts/release-version.sh v0.3.0-beta.1 | sed -E 's/^name=(.*)/VERSION_NAME=\1/; s/^code=(.*)/VERSION_CODE=\1/; /^prerelease/d')"
+./gradlew assembleDebug -PVERSION_NAME="$VERSION_NAME" -PVERSION_CODE="$VERSION_CODE"
+```
+
 Run `task test` first. Then push the tag by itself:
 
 ```bash
