@@ -97,6 +97,24 @@ class WebLinkSheetTest {
     }
 
     @Test
+    fun a_single_word_on_the_clipboard_is_not_taken_for_an_address() {
+        show(clipboardUrl = "hunter2")
+        tag("web-link-url").assertTextEquals("")
+    }
+
+    @Test
+    fun a_number_on_the_clipboard_is_not_taken_for_an_address() {
+        show(clipboardUrl = "123456")
+        tag("web-link-url").assertTextEquals("")
+    }
+
+    @Test
+    fun a_bare_host_on_the_clipboard_is_not_prefilled_either() {
+        show(clipboardUrl = "example.com")
+        tag("web-link-url").assertTextEquals("")
+    }
+
+    @Test
     fun a_clipboard_link_with_another_scheme_is_ignored() {
         show(clipboardUrl = "ftp://x.org")
         tag("web-link-url").assertTextEquals("")

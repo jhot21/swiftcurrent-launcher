@@ -1,5 +1,7 @@
 package me.jhot.swiftcurrent.shortcuts
 
+import android.content.ClipDescription
+import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
 import me.jhot.swiftcurrent.core.UserShortcut
@@ -54,6 +56,16 @@ object WebLinks {
         return WebLink(uri = "$scheme://$lowerHost$port$tail", host = lowerHost, display = "$lowerHost$port$shownTail")
     }
 
+    /**
+     * True for text that is clearly an address: an explicit http(s) scheme and a link [parse] accepts. A bare
+     * word or number passes [parse] as a host, which is right for something the owner typed but wrong for
+     * text that merely sits on the clipboard (a copied password or one-time code).
+     */
+    fun isWebAddress(text: String): Boolean {
+        val t = text.trim()
+        return (t.startsWith("http://", ignoreCase = true) || t.startsWith("https://", ignoreCase = true)) && parse(t) != null
+    }
+
     fun defaultName(link: WebLink): String = link.host
 
     /** The intent stored for a web link: a VIEW of the address that only [browserPackage] may answer. */
@@ -77,4 +89,17 @@ fun webLinkDisplay(shortcut: UserShortcut): String? {
     }
     if (intent.action != Intent.ACTION_VIEW || intent.`package` != shortcut.appPackage) return null
     return intent.dataString?.let { WebLinks.parse(it)?.display }
+}
+
+/**
+ * The web address the owner has just copied, trimmed, or null. Nothing is offered unless it is plain text
+ * with an explicit http(s) scheme and not marked sensitive. The clip's description is read first, because
+ * reading the clip itself shows Android's "pasted from your clipboard" notice.
+ */
+fun copiedWebAddress(clipboard: ClipboardManager): String? {
+    val description = clipboard.primaryClipDescription ?: return null
+    if (!description.hasMimeType("text/*")) return null
+    if (description.extras?.getBoolean(ClipDescription.EXTRA_IS_SENSITIVE) == true) return null
+    val text = clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString()?.trim() ?: return null
+    return text.takeIf(WebLinks::isWebAddress)
 }

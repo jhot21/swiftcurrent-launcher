@@ -25,6 +25,7 @@ import me.jhot.swiftcurrent.shortcuts.AddOutcome
 import me.jhot.swiftcurrent.shortcuts.Creator
 import me.jhot.swiftcurrent.shortcuts.RejectReason
 import me.jhot.swiftcurrent.shortcuts.WebLinks
+import me.jhot.swiftcurrent.shortcuts.copiedWebAddress
 import me.jhot.swiftcurrent.ui.editor.WebLinkSheet
 
 /** The text for every way an add can end other than success, resolved once so both entry points say the same thing. */
@@ -144,12 +145,12 @@ internal fun WebLinkHost(
     val scope = rememberCoroutineScope()
     val messages = rememberAddMessages()
     val failed = stringResource(R.string.search_launch_failed)
-    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     val onMessageNow by rememberUpdatedState(onMessage)
     val onAddedNow by rememberUpdatedState(onAdded)
     if (creator == null) return
     // Read once when the form opens: the text on the clipboard then is what the owner just copied.
-    val copied = remember(creator) { clipboard.getText()?.text }
+    val copied = remember(creator) { context.getSystemService(android.content.ClipboardManager::class.java)?.let(::copiedWebAddress) }
     WebLinkSheet(
         browserLabel = creator.appLabel,
         clipboardUrl = copied,

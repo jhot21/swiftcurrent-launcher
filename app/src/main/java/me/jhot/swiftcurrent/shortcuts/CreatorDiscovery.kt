@@ -3,6 +3,7 @@ package me.jhot.swiftcurrent.shortcuts
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.graphics.drawable.Drawable
 import android.net.Uri
 
@@ -53,6 +54,8 @@ class PackageManagerCreatorDiscovery(
     private val packageManager: PackageManager,
     private val ownPackage: String,
     private val webLinkLabel: String,
+    // A seam so a test can see the flags a query was made with; the platform's answer cannot be faked by flags.
+    private val queryActivities: (Intent, Int) -> List<ResolveInfo> = { intent, flags -> packageManager.queryIntentActivities(intent, flags) },
 ) : CreatorDiscovery {
     override fun creators(): List<Creator> =
         (external() + webLinks())
@@ -63,7 +66,7 @@ class PackageManagerCreatorDiscovery(
             )
 
     private fun external(): List<Creator> =
-        packageManager.queryIntentActivities(Intent(Intent.ACTION_CREATE_SHORTCUT), 0)
+        queryActivities(Intent(Intent.ACTION_CREATE_SHORTCUT), 0)
             .mapNotNull { r ->
                 val a = r.activityInfo ?: return@mapNotNull null
                 if (a.packageName == ownPackage) return@mapNotNull null
@@ -73,10 +76,12 @@ class PackageManagerCreatorDiscovery(
             }
 
     // A browser answers VIEW for any web address. A URI with no host only matches filters that name no
-    // host, which leaves out apps that open one site's links.
+    // host, which leaves out apps that open one site's links. MATCH_ALL because a plain web query is
+    // narrowed to the default browser when one is set, which would hide every other browser.
     private fun webLinks(): List<Creator> =
-        packageManager.queryIntentActivities(
-            Intent(Intent.ACTION_VIEW, Uri.parse("http://")).addCategory(Intent.CATEGORY_BROWSABLE), 0,
+        queryActivities(
+            Intent(Intent.ACTION_VIEW, Uri.parse("http://")).addCategory(Intent.CATEGORY_BROWSABLE),
+            PackageManager.MATCH_ALL,
         )
             .mapNotNull { r ->
                 val a = r.activityInfo ?: return@mapNotNull null

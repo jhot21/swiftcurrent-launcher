@@ -178,4 +178,18 @@ class CreatorDiscoveryTest {
         assertEquals(true, Creator.webLink("p", "P", "Web link").isWebLink)
         assertEquals(false, Creator("p/p.A", "A", "P").isWebLink)
     }
+
+    @Test
+    fun the_browser_query_asks_for_every_match_not_only_the_default_browser() {
+        val seen = mutableListOf<Pair<Intent, Int>>()
+        PackageManagerCreatorDiscovery(pm, context.packageName, "Web link") { intent, flags ->
+            seen += intent to flags
+            emptyList()
+        }.creators()
+        val browserQuery = seen.single { it.first.action == Intent.ACTION_VIEW }
+        assertEquals(
+            "a web VIEW query without MATCH_ALL lists only the default browser",
+            android.content.pm.PackageManager.MATCH_ALL, browserQuery.second and android.content.pm.PackageManager.MATCH_ALL,
+        )
+    }
 }

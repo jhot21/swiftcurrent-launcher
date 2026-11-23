@@ -45,7 +45,7 @@ private const val MAX_URL_LENGTH = 2048
  */
 @Composable
 fun WebLinkSheet(browserLabel: String, clipboardUrl: String?, onSave: (url: String, name: String) -> Unit, onDismiss: () -> Unit) {
-    var url by rememberSaveable { mutableStateOf(clipboardUrl?.trim()?.takeIf { WebLinks.parse(it) != null }.orEmpty()) }
+    var url by rememberSaveable { mutableStateOf(clipboardUrl?.trim()?.takeIf(WebLinks::isWebAddress).orEmpty()) }
     var name by rememberSaveable { mutableStateOf("") }
     val link = WebLinks.parse(url)
     val canSave = link != null
