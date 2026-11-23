@@ -78,7 +78,10 @@ class LauncherAppsShortcutProvider(context: Context, private val messages: Short
         val query = LauncherApps.ShortcutQuery().setQueryFlags(
             LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
                 LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST or
-                LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED,
+                LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED or
+                // Gmail publishes each Google Chat conversation as a long-lived shortcut that Android
+                // only caches (never dynamic or pinned), so without this flag they are invisible.
+                LauncherApps.ShortcutQuery.FLAG_MATCH_CACHED,
         )
         val shortcuts: List<ShortcutInfo> = try {
             launcherApps.getShortcuts(query, user)
