@@ -32,6 +32,17 @@
         <intent>
             <action android:name="android.intent.action.CREATE_SHORTCUT" />
         </intent>
+        <!-- Browsers, for the Web link row under each on the Add shortcut sheet. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="http" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
         <!-- Meld's provider holds the modes conditions read. -->
         <package android:name="me.jhot.meld" />
     </queries>

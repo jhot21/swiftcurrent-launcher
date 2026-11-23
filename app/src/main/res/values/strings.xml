@@ -88,6 +88,7 @@
     <string name="app_shortcuts_toggle_all_on">Toggle all on</string>
     <string name="app_shortcuts_delete">Delete %1$s</string>
     <string name="shortcut_picker_title">Add shortcut</string>
+    <string name="shortcut_web_link">Web link</string>
     <string name="shortcut_picker_empty">No app offers to make shortcuts</string>
     <string name="shortcut_rejected_no_intent">That app didn\u2019t return a shortcut</string>
     <string name="shortcut_rejected_no_name">That shortcut has no name</string>
