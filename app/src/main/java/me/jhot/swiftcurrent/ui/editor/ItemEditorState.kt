@@ -112,7 +112,11 @@ class ItemEditorState(
 
     /** Offers a shortcut that did not exist when the editor opened (one just made). It is not selected. */
     fun addShortcutCandidate(c: ShortcutCandidate) {
-        if (shortcutCandidates.none { it.key == c.key }) addedShortcuts.add(c)
+        if (shortcutCandidates.none { it.key == c.key }) {
+            addedShortcuts.add(c)
+            // Opened so the new row is seen: in a collapsed group it would look as if nothing was added.
+            groupOverrides[c.appLabel] = true
+        }
     }
 
     /** The item rows only: the favorites list, or a pop-up's entries. */

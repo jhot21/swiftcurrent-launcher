@@ -231,6 +231,24 @@ class ItemEditorStateTest {
     }
 
     @Test
+    fun a_shortcut_made_while_the_editor_is_open_opens_its_apps_group_so_it_can_be_seen() {
+        val s = ItemEditorState(
+            selected = emptyList(),
+            candidates = candidates(listOf(ShortcutCandidate("a/1", "One", "Gmail"), ShortcutCandidate("a/2", "Two", "Gmail"))),
+            capacity = null,
+            strings = EnglishEditorStrings,
+            onChange = {},
+        )
+        assertFalse(s.isGroupOpen("Gmail"))
+        s.addShortcutCandidate(ShortcutCandidate("user/u1", "Chat", "Gmail"))
+        assertTrue(s.isGroupOpen("Gmail"))
+        // Adding the same one again changes nothing, so it does not reopen a group the owner closed.
+        s.toggleGroup("Gmail")
+        s.addShortcutCandidate(ShortcutCandidate("user/u1", "Chat", "Gmail"))
+        assertFalse(s.isGroupOpen("Gmail"))
+    }
+
+    @Test
     fun every_change_is_reported_live() {
         val seen = mutableListOf<List<PopupRow>>()
         val s = state(listOf("Alpha", "Bravo"), capacity = 3, ownApp = null, onChange = { seen += it })
