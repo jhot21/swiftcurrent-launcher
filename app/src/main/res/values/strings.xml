@@ -89,6 +89,11 @@
     <string name="app_shortcuts_delete">Delete %1$s</string>
     <string name="shortcut_picker_title">Add shortcut</string>
     <string name="shortcut_web_link">Web link</string>
+    <string name="web_link_title">Web link in %1$s</string>
+    <string name="web_link_url_hint">Web address</string>
+    <string name="web_link_name_hint">Name</string>
+    <string name="web_link_error">Enter a web address, like example.com</string>
+    <string name="web_link_save">Add</string>
     <string name="shortcut_picker_empty">No app offers to make shortcuts</string>
     <string name="shortcut_rejected_no_intent">That app didn\u2019t return a shortcut</string>
     <string name="shortcut_rejected_no_name">That shortcut has no name</string>

@@ -55,7 +55,6 @@ enum class ConditionKind(val permission: String) {
 }
 
 // The only red in the launcher; it marks a condition that can never match.
-private val brokenColor = Color(0xFFE5534B)
 
 /**
  * Same subject and polarity. A Bluetooth device is its address: the stored name is only a fallback
@@ -144,7 +143,7 @@ private fun ConditionCard(index: Int, condition: Condition, broken: Boolean, onP
     Row(
         Modifier.fillMaxWidth().testTag("condition-$index")
             .background(Tokens.card, Tokens.cardShape)
-            .then(if (broken) Modifier.border(1.5.dp, brokenColor, Tokens.cardShape) else Modifier)
+            .then(if (broken) Modifier.border(1.5.dp, Tokens.error, Tokens.cardShape) else Modifier)
             .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -152,7 +151,7 @@ private fun ConditionCard(index: Int, condition: Condition, broken: Boolean, onP
             AppText(stringResource(R.string.conditions_card, kind, subject), AppType.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (broken) {
                 val message = if (condition is Condition.Bluetooth) R.string.conditions_broken_device else R.string.conditions_broken_mode
-                AppText(stringResource(message), AppType.label, color = brokenColor)
+                AppText(stringResource(message), AppType.label, color = Tokens.error)
             }
             Row(
                 Modifier.testTag("condition-toggle-$index").background(Tokens.sheet, Tokens.pillShape).padding(3.dp).selectableGroup(),

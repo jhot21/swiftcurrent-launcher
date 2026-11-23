@@ -13,6 +13,9 @@ object Tokens {
     val dimText = Color(0xFF9A9A9A)
     val dot = Color(0xFFC9C9C9)
 
+    /** Text and borders that say something is wrong with what the owner set up or typed. */
+    val error = Color(0xFFE5534B)
+
     val sheetShape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)
     val cardShape = RoundedCornerShape(16.dp)
     val pillShape = RoundedCornerShape(percent = 50)
