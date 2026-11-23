@@ -49,7 +49,11 @@ fun SheetScaffold(
         Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = SCRIM_ALPHA * drag.scrimAlpha))
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
+            // The keyboard shortens the room the sheet has, outside its own height cap, so a tall keyboard lifts the
+            // whole sheet instead of eating the sheet's height. The scrim above stays full screen. It comes before the
+            // navigation bar padding below, which then only pads what the keyboard has not already covered.
+            .imePadding(),
         contentAlignment = Alignment.BottomCenter,
     ) {
         Column(
@@ -62,8 +66,6 @@ fun SheetScaffold(
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})
                 .background(Tokens.sheet, Tokens.sheetShape)
                 .navigationBarsPadding()
-                // A sheet with a text field rises above the keyboard; without one this adds nothing.
-                .imePadding()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
