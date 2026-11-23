@@ -1,7 +1,9 @@
 package me.jhot.swiftcurrent.ui.editor
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -40,6 +42,30 @@ class WebLinkSheetTest {
 
     private fun SemanticsNodeInteraction.typedLength() =
         fetchSemanticsNode().config[SemanticsProperties.EditableText].text.length
+
+    private fun SemanticsNodeInteraction.description() =
+        fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString()
+
+    @Test
+    fun each_field_has_a_label_that_stays_while_text_is_typed() {
+        show()
+        assertEquals(compose.activity.getString(R.string.web_link_url_hint), tag("web-link-url").description())
+        assertEquals(compose.activity.getString(R.string.web_link_name_hint), tag("web-link-name").description())
+        tag("web-link-url").performTextInput("example.com")
+        assertEquals(compose.activity.getString(R.string.web_link_url_hint), tag("web-link-url").description())
+        // The name field's visible hint turns into the host, but its label does not.
+        assertEquals(compose.activity.getString(R.string.web_link_name_hint), tag("web-link-name").description())
+    }
+
+    @Test
+    fun an_invalid_address_is_flagged_on_the_field_and_announced() {
+        show()
+        val error = compose.activity.getString(R.string.web_link_error)
+        assertEquals(false, tag("web-link-url").fetchSemanticsNode().config.contains(SemanticsProperties.Error))
+        tag("web-link-url").performTextInput("javascript:alert(1)")
+        assertEquals(error, tag("web-link-url").fetchSemanticsNode().config[SemanticsProperties.Error])
+        assertEquals(LiveRegionMode.Polite, tag("web-link-error").fetchSemanticsNode().config[SemanticsProperties.LiveRegion])
+    }
 
     @Test
     fun the_title_names_the_browser() {

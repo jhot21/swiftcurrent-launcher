@@ -23,7 +23,12 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -56,17 +61,26 @@ fun WebLinkSheet(browserLabel: String, clipboardUrl: String?, onSave: (url: Stri
     }
 
     SheetScaffold(title = stringResource(R.string.web_link_title, browserLabel), onDismiss = onDismiss) {
+        val errorMessage = stringResource(R.string.web_link_error).takeIf { url.isNotBlank() && link == null }
+        val urlLabel = stringResource(R.string.web_link_url_hint)
         Field(
             value = url, onChange = { url = it.filterNot { c -> c.isISOControl() }.take(MAX_URL_LENGTH) },
-            hint = stringResource(R.string.web_link_url_hint), tag = "web-link-url", keyboardType = KeyboardType.Uri,
+            hint = urlLabel, label = urlLabel, errorText = errorMessage, tag = "web-link-url", keyboardType = KeyboardType.Uri,
             ime = ImeAction.Next, onDone = {}, modifier = Modifier.focusRequester(focus),
         )
-        if (url.isNotBlank() && link == null) {
-            AppText(stringResource(R.string.web_link_error), AppType.label, Modifier.testTag("web-link-error").padding(start = 4.dp), color = Tokens.error)
+        if (errorMessage != null) {
+            AppText(
+                errorMessage, AppType.label,
+                // Polite: said when it appears, without cutting off what the reader is already saying.
+                Modifier.testTag("web-link-error").padding(start = 4.dp).semantics { liveRegion = LiveRegionMode.Polite },
+                color = Tokens.error,
+            )
         }
+        val nameLabel = stringResource(R.string.web_link_name_hint)
         Field(
             value = name, onChange = { name = Renames.limit(it) },
-            hint = link?.host ?: stringResource(R.string.web_link_name_hint), hintTag = if (link != null) "web-link-name-hint" else null,
+            // The visible hint becomes the host once the address is valid; the label does not change.
+            hint = link?.host ?: nameLabel, label = nameLabel, hintTag = if (link != null) "web-link-name-hint" else null,
             tag = "web-link-name", keyboardType = KeyboardType.Text, ime = ImeAction.Done, onDone = ::save,
         )
         Box(
@@ -84,12 +98,14 @@ private fun Field(
     value: String,
     onChange: (String) -> Unit,
     hint: String,
+    label: String,
     tag: String,
     keyboardType: KeyboardType,
     ime: ImeAction,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
     hintTag: String? = null,
+    errorText: String? = null,
 ) {
     Box(Modifier.fillMaxWidth().background(Tokens.card, Tokens.cardShape).padding(horizontal = 20.dp, vertical = 14.dp)) {
         BasicTextField(
@@ -100,7 +116,11 @@ private fun Field(
             cursorBrush = SolidColor(Tokens.text),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = ime),
             keyboardActions = KeyboardActions(onDone = { onDone() }),
-            modifier = modifier.fillMaxWidth().testTag(tag),
+            modifier = modifier.fillMaxWidth().testTag(tag).semantics {
+                // The visible hint disappears once text is typed, so the field's name is its own constant label.
+                contentDescription = label
+                if (errorText != null) error(errorText)
+            },
         )
         if (value.isEmpty()) {
             AppText(hint, AppType.body, if (hintTag != null) Modifier.testTag(hintTag) else Modifier, color = Tokens.dimText)

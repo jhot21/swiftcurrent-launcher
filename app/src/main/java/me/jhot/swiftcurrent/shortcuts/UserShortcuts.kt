@@ -104,7 +104,8 @@ class UserShortcuts(
 
     /**
      * Stores a web link as a shortcut of [browserPackage]. The intent is built here, from a validated
-     * [link], and passes the same [targetsOnly] check as any other shortcut. A blank [name] becomes the host.
+     * [link], and names only [browserPackage], so [launch] later accepts it through the same [targetsOnly]
+     * check as any other shortcut. A blank [name] becomes the host.
      */
     suspend fun addWebLink(browserPackage: String, link: WebLink, name: String, icon: Drawable?, update: LauncherUpdate): AddOutcome {
         val label = name.trim().ifEmpty { WebLinks.defaultName(link) }

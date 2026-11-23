@@ -30,7 +30,11 @@ import org.robolectric.annotation.GraphicsMode
 
 private class RecordingStarter(var failWith: Exception? = null) : IntentStarter {
     val started = mutableListOf<Intent>()
+
+    /** Every start asked for, including the ones that then failed. */
+    val attempts = mutableListOf<Intent>()
     override fun start(intent: Intent) {
+        attempts += intent
         failWith?.let { throw it }
         started += intent
     }
@@ -327,6 +331,8 @@ class UserShortcutsTest {
         s.addLink()
         starter.failWith = ActivityNotFoundException()
         assertEquals(LaunchOutcome.Failed("gone"), s.launch(stored()))
+        // One attempt, still pinned to the missing browser: no retry without the package, which would open another one.
+        assertEquals(browser, starter.attempts.single().`package`)
         assertTrue(starter.started.isEmpty())
     }
 
