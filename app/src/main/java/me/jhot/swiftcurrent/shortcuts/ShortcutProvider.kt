@@ -67,7 +67,7 @@ private const val CONVERSATION_CATEGORY = "android.shortcut.conversation"
  * conversations are told apart by Android's conversation category.
  */
 fun appLabelFor(appLabel: String, packageName: String, categories: Set<String>?): String =
-    if (packageName == GMAIL && categories.orEmpty().any { it.startsWith(CONVERSATION_CATEGORY) }) "Google Chat" else appLabel
+    if (packageName == GMAIL && categories.orEmpty().any { it.startsWith(CONVERSATION_CATEGORY) }) GOOGLE_CHAT else appLabel
 
 /** The pin set to hand `LauncherApps.pinShortcuts` once [removeId] is unpinned. */
 fun pinsAfterRemoving(pinnedIds: Collection<String>, removeId: String): List<String> =

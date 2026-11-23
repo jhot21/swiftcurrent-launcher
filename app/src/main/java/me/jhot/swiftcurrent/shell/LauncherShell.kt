@@ -94,6 +94,7 @@ import me.jhot.swiftcurrent.shortcuts.Creator
 import me.jhot.swiftcurrent.shortcuts.ShortcutAccess
 import me.jhot.swiftcurrent.shortcuts.ShortcutEntry
 import me.jhot.swiftcurrent.shortcuts.ShortcutFilter
+import me.jhot.swiftcurrent.shortcuts.userShortcutAppLabel
 import me.jhot.swiftcurrent.shortcuts.userShortcutId
 import me.jhot.swiftcurrent.shortcuts.userShortcutKey
 import me.jhot.swiftcurrent.shortcuts.webLinkDisplay
@@ -185,6 +186,7 @@ internal fun searchSources(
             labelsVersion = apps,
             // A web link is also found by its address.
             addressOf = ::webLinkDisplay,
+            appNameFor = ::userShortcutAppLabel,
         ),
         ContactSource(deps.contacts, deps::contactsGranted, strings, io, ContactActionFactory { launchContactAction(deps, it, askPermission) }),
         EventSource(
@@ -917,7 +919,7 @@ private fun EditorHost(
             .mapNotNull { u ->
                 val app = apps.firstOrNull { it.packageName == u.appPackage }?.label ?: goneShortcutLabels[u.appPackage]
                     ?: return@mapNotNull null
-                ShortcutCandidate(userShortcutKey(u.id), u.label, app)
+                ShortcutCandidate(userShortcutKey(u.id), u.label, userShortcutAppLabel(u, app))
             }
     }
     // A favorite by its id, else an installed app by its component (its pop-up is kept in appPopups).
@@ -1033,7 +1035,7 @@ private fun EditorHost(
         val onMade: suspend (UserShortcut) -> Unit = { made ->
             val app = apps.firstOrNull { it.packageName == made.appPackage }?.label
                 ?: withContext(io) { deps.packageLabel(made.appPackage) } ?: made.appPackage
-            state.addShortcutCandidate(ShortcutCandidate(userShortcutKey(made.id), made.label, app))
+            state.addShortcutCandidate(ShortcutCandidate(userShortcutKey(made.id), made.label, userShortcutAppLabel(made, app)))
         }
         val create = rememberShortcutCreator(deps, model, io, onMessage, onMade)
         var webLinkFor by rememberSaveable(stateSaver = WebLinkCreatorSaver) { mutableStateOf<Creator?>(null) }

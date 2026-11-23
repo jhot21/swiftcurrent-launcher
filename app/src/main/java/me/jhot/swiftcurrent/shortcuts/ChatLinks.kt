@@ -1,6 +1,19 @@
 package me.jhot.swiftcurrent.shortcuts
 
+import me.jhot.swiftcurrent.core.UserShortcut
 import java.util.Locale
+
+/** What Gmail's Chat conversations are filed under, so they read "Google Chat: Sean" and not "Gmail: Sean". */
+const val GOOGLE_CHAT = "Google Chat"
+
+/**
+ * The app name to show for a shortcut the owner made: a saved Chat link is Gmail's (or the Chat app's) to open,
+ * but it is a conversation, so it reads like the ones Gmail publishes ([appLabelFor]).
+ */
+fun userShortcutAppLabel(shortcut: UserShortcut, appLabel: String): String {
+    val chat = shortcut.appPackage in Creator.CHAT_PACKAGES && webLinkDisplay(shortcut)?.startsWith("chat.google.com/") == true
+    return if (chat) GOOGLE_CHAT else appLabel
+}
 
 /** A Google Chat conversation: its [id] as Chat writes it, and the [link] Gmail's Chat deep link answers for it. */
 data class ChatLink(val id: String, val link: WebLink)

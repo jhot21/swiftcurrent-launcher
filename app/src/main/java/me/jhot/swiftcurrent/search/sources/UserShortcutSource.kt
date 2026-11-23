@@ -29,6 +29,8 @@ class UserShortcutSource(
      * this source stays free of Android's Intent; the shell passes [webLinkDisplay].
      */
     private val addressOf: (UserShortcut) -> String? = { null },
+    /** The app name to show for a shortcut, given its app's own: a Chat link reads "Google Chat", not "Gmail". */
+    private val appNameFor: (UserShortcut, String) -> String = { _, app -> app },
 ) : SearchSource {
     override val name = "Shortcuts"
 
@@ -68,7 +70,8 @@ class UserShortcutSource(
     private fun row(s: UserShortcut): SearchResult? {
         if (s.label.isBlank()) return null
         val app = appLabel(s.appPackage)?.takeIf { it.isNotBlank() } ?: return null
-        val label = "$app: ${s.label}"
+        val appName = appNameFor(s, app)
+        val label = "$appName: ${s.label}"
         val icon = s.iconBytes?.let { IconRef.Bytes(it) } ?: IconRef.Package(s.appPackage)
         return SearchResult(
             id = idOf(s),
