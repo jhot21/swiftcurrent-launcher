@@ -36,4 +36,17 @@ class ShortcutProviderTest {
         assertEquals(listOf("a", "b"), pinsAfterRemoving(listOf("a", "b"), "z"))
         assertEquals(emptyList<String>(), pinsAfterRemoving(emptyList(), "a"))
     }
+
+    @Test
+    fun gmail_chat_conversations_are_filed_under_google_chat() {
+        val room = setOf("android.shortcut.conversation.room")
+        val dm = setOf("android.shortcut.conversation.dm")
+        assertEquals("Google Chat", appLabelFor("Gmail", "com.google.android.gm", room))
+        assertEquals("Google Chat", appLabelFor("Gmail", "com.google.android.gm", dm))
+        // Gmail's own shortcuts (compose a message to a person) stay Gmail.
+        assertEquals("Gmail", appLabelFor("Gmail", "com.google.android.gm", setOf("actions.intent.SEND_MESSAGE")))
+        assertEquals("Gmail", appLabelFor("Gmail", "com.google.android.gm", emptySet()))
+        // Another app's conversations keep that app's name.
+        assertEquals("Signal", appLabelFor("Signal", "org.thoughtcrime.securesms", room))
+    }
 }

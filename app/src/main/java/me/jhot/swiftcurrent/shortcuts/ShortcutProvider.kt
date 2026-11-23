@@ -58,6 +58,17 @@ fun shortcutEntryOrNull(
     return ShortcutEntry("$packageName/$id", appLabel, packageName, id, label, pinned)
 }
 
+private const val GMAIL = "com.google.android.gm"
+private const val CONVERSATION_CATEGORY = "android.shortcut.conversation"
+
+/**
+ * Gmail hosts Google Chat and publishes each conversation as a shortcut of its own package, which
+ * would read "Gmail: Sean" next to Gmail's compose-an-email shortcut for the same person. Chat
+ * conversations are told apart by Android's conversation category.
+ */
+fun appLabelFor(appLabel: String, packageName: String, categories: Set<String>?): String =
+    if (packageName == GMAIL && categories.orEmpty().any { it.startsWith(CONVERSATION_CATEGORY) }) "Google Chat" else appLabel
+
 /** The pin set to hand `LauncherApps.pinShortcuts` once [removeId] is unpinned. */
 fun pinsAfterRemoving(pinnedIds: Collection<String>, removeId: String): List<String> =
     pinnedIds.filter { it != removeId }
@@ -95,7 +106,7 @@ class LauncherAppsShortcutProvider(context: Context, private val messages: Short
                     packageManager.getApplicationLabel(packageManager.getApplicationInfo(s.`package`, 0)).toString()
                 }.getOrDefault(s.`package`)
             }
-            shortcutEntryOrNull(appLabel, s.`package`, s.id, s.shortLabel, s.longLabel, s.isEnabled, s.isPinned)
+            shortcutEntryOrNull(appLabelFor(appLabel, s.`package`, s.categories), s.`package`, s.id, s.shortLabel, s.longLabel, s.isEnabled, s.isPinned)
         }
     }
 
