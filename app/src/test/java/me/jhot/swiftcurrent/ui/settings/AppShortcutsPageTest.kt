@@ -108,6 +108,24 @@ class AppShortcutsPageTest {
     }
 
     @Test
+    fun with_every_permission_granted_there_is_no_search_sources_section() {
+        show(listOf(group()))
+        compose.onNodeWithText(resources.getString(R.string.app_shortcuts_sources)).assertDoesNotExist()
+        compose.onNodeWithText(resources.getString(R.string.app_shortcuts_source_apps)).assertDoesNotExist()
+        compose.onNodeWithText(resources.getString(R.string.app_shortcuts_source_contacts)).assertDoesNotExist()
+    }
+
+    @Test
+    fun only_a_source_that_needs_a_permission_is_listed() {
+        show(listOf(group()), contactsGranted = false)
+        compose.onNodeWithText(resources.getString(R.string.app_shortcuts_sources)).assertExists()
+        compose.onNodeWithText(resources.getString(R.string.app_shortcuts_source_contacts)).assertExists()
+        compose.onNodeWithText(resources.getString(R.string.app_shortcuts_source_apps)).assertDoesNotExist()
+        // Another row carries the word "Shortcuts" too, so a source row is told apart by its badge.
+        compose.onAllNodesWithTag("permission-badge-shortcuts", useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
     fun no_badge_when_contacts_is_granted() {
         show(listOf(group()), contactsGranted = true)
         compose.onAllNodesWithTag("permission-badge-contacts", useUnmergedTree = true).assertCountEquals(0)
@@ -142,7 +160,6 @@ class AppShortcutsPageTest {
         compose.onNodeWithTag("app-shortcuts-app").assertExists()
         // The list is still there under the sheet.
         compose.onNodeWithTag("app-shortcuts-list").assertExists()
-        compose.onNodeWithText(resources.getString(R.string.app_shortcuts_source_apps)).assertExists()
     }
 
     @Test

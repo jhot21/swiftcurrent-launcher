@@ -93,15 +93,15 @@ private fun AppList(
     )
     val makeOwn = stringResource(R.string.app_shortcuts_make_own)
     SettingsPage(title = title, state = listState) {
-        section(sourcesLabel)
-        sources.forEach { s ->
+        // Only a source that cannot answer yet is shown: its row is the way to grant what it lacks.
+        val blocked = sources.filter { it.missingPermission }
+        if (blocked.isNotEmpty()) section(sourcesLabel)
+        blocked.forEach { s ->
             row(
                 icon = {},
                 title = sourceNames.getValue(s.id),
-                trailing = if (s.missingPermission) ({ PermissionBadge(s.id) }) else null,
-                onClick = if (s.missingPermission) {
-                    if (s.id == SourceId.Shortcuts) actions.onGrantShortcuts else actions.onGrantContacts
-                } else null,
+                trailing = { PermissionBadge(s.id) },
+                onClick = if (s.id == SourceId.Shortcuts) actions.onGrantShortcuts else actions.onGrantContacts,
             )
         }
         section(appsLabel)
