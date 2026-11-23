@@ -10,6 +10,7 @@ import me.jhot.swiftcurrent.search.SearchResult
 import me.jhot.swiftcurrent.search.SearchSource
 import me.jhot.swiftcurrent.shortcuts.ShortcutFilter
 import me.jhot.swiftcurrent.shortcuts.userShortcutKey
+import me.jhot.swiftcurrent.shortcuts.webLinkDisplay
 
 /**
  * The shortcuts the owner made, as "App: name" results beside the system's. [shortcuts] is read on
@@ -45,7 +46,11 @@ class UserShortcutSource(
         val words = QueryWords.of(query)
         if (words.isEmpty) return emptyList()
         return rows().mapNotNull { (s, row) ->
-            row.takeIf { filter.enabled(userShortcutKey(s.id)) && words.matches(it.foldedLabel) }
+            // A web link is also found by its address, which ranking treats as another name for it.
+            row.takeIf {
+                filter.enabled(userShortcutKey(s.id)) &&
+                    (words.matches(it.foldedLabel) || it.foldedAlias?.let(words::matches) == true)
+            }
         }
     }
 
@@ -68,6 +73,7 @@ class UserShortcutSource(
             kind = Kind.Shortcut,
             icon = icon,
             primary = Action(label, icon) { launch(s) },
+            alias = webLinkDisplay(s),
         )
     }
 }

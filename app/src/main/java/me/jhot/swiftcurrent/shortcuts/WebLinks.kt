@@ -2,6 +2,8 @@ package me.jhot.swiftcurrent.shortcuts
 
 import android.content.Intent
 import android.net.Uri
+import me.jhot.swiftcurrent.core.UserShortcut
+import java.net.URISyntaxException
 import java.util.Locale
 
 /** A validated web address. [uri] is absolute and normalized, [display] is the address without its scheme. */
@@ -60,4 +62,19 @@ object WebLinks {
             .addCategory(Intent.CATEGORY_BROWSABLE)
             .setPackage(browserPackage)
             .toUri(Intent.URI_INTENT_SCHEME)
+}
+
+/**
+ * The address of a shortcut made by [WebLinks], without its scheme, or null for any other shortcut: only a
+ * VIEW of an http(s) address that names the shortcut's own app counts, so a damaged or foreign intent is
+ * simply not a web link.
+ */
+fun webLinkDisplay(shortcut: UserShortcut): String? {
+    val intent = try {
+        Intent.parseUri(shortcut.intentUri, Intent.URI_INTENT_SCHEME)
+    } catch (e: URISyntaxException) {
+        return null
+    }
+    if (intent.action != Intent.ACTION_VIEW || intent.`package` != shortcut.appPackage) return null
+    return intent.dataString?.let { WebLinks.parse(it)?.display }
 }

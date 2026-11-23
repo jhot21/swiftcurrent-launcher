@@ -1,5 +1,6 @@
 package me.jhot.swiftcurrent.search.sources
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
 import me.jhot.swiftcurrent.core.UserShortcut
@@ -10,10 +11,17 @@ import me.jhot.swiftcurrent.shortcuts.ShortcutAccess
 import me.jhot.swiftcurrent.shortcuts.ShortcutEntry
 import me.jhot.swiftcurrent.shortcuts.ShortcutFilter
 import me.jhot.swiftcurrent.shortcuts.ShortcutProvider
+import me.jhot.swiftcurrent.shortcuts.WebLinks
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
+// Robolectric: a web link's address is read back out of its stored Intent.
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [34])
 class UserShortcutSourceTest {
     private val bob = UserShortcut("u1", "pkg.alpha.maps", "Friend Bob", "intent:#Intent;end", byteArrayOf(1))
     private val carol = UserShortcut("u2", "pkg.alpha.maps", "Friend Carol", "intent:#Intent;end")
@@ -113,5 +121,45 @@ class UserShortcutSourceTest {
         val first = runBlocking { source.search("bob") }.single()
         val second = runBlocking { source.search("bo") }.single { it.id == first.id }
         assertTrue("same row, folded once", first === second)
+    }
+
+    private val browser = "org.example.browser"
+    private fun webLink(id: String, name: String, address: String, pkg: String = browser) =
+        UserShortcut(id, pkg, name, WebLinks.intentUri(WebLinks.parse(address)!!, pkg))
+
+    private val code = webLink("w1", "Code", "https://github.com/jhot21")
+    private val geo = UserShortcut("g1", browser, "Friend Bob", "intent:geo:1,2#Intent;package=$browser;end")
+    private val damaged = UserShortcut("d1", browser, "Broken", "intent:https://example.com#Intent;end")
+
+    @Test
+    fun a_web_link_is_found_by_its_address_as_well_as_its_name() {
+        val labels = mapOf(browser to "Example Browser", "pkg.alpha.maps" to "Alpha Maps")
+        listOf("gith", "github.com", "jhot21", "code").forEach { q ->
+            list = listOf(code, geo, damaged)
+            val found = Ranking.order(q, runBlocking { UserShortcutSource({ list }, labels::get, { LaunchOutcome.Launched }).search(q) })
+            assertEquals("query '$q'", listOf("Example Browser: Code"), found.map { it.label })
+        }
+    }
+
+    @Test
+    fun the_address_is_carried_as_the_alias_and_other_shortcuts_have_none() {
+        val labels = mapOf(browser to "Example Browser")
+        val src = UserShortcutSource({ listOf(code, geo) }, labels::get, { LaunchOutcome.Launched })
+        assertEquals("github.com/jhot21", Ranking.order("gith", runBlocking { src.search("gith") }).single().alias)
+        assertNull(Ranking.order("bob", runBlocking { src.search("bob") }).single().alias)
+    }
+
+    @Test
+    fun a_damaged_web_link_has_no_alias_and_is_still_found_by_name() {
+        val labels = mapOf(browser to "Example Browser")
+        val src = UserShortcutSource({ listOf(damaged) }, labels::get, { LaunchOutcome.Launched })
+        val found = Ranking.order("broken", runBlocking { src.search("broken") })
+        assertEquals(listOf("Example Browser: Broken"), found.map { it.label })
+        assertNull(found.single().alias)
+    }
+
+    @Test
+    fun an_empty_query_finds_nothing() {
+        assertTrue(runBlocking { source().search("") }.isEmpty())
     }
 }
