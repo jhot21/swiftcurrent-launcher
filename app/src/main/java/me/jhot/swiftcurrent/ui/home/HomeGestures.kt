@@ -5,6 +5,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.runtime.Composable
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.withTimeoutOrNull
 import me.jhot.swiftcurrent.core.Entry
 import me.jhot.swiftcurrent.core.Target
+import me.jhot.swiftcurrent.ui.applist.ScrubberDefaults
 import me.jhot.swiftcurrent.ui.edge.EDGE_FRACTION
 import me.jhot.swiftcurrent.ui.edge.ScrubberExclusion
 import kotlin.math.abs
@@ -182,9 +184,16 @@ fun HomeGestureHost(
     onArmed: () -> Unit = {},
     // The shell passes its own so it can ask where a row is (to anchor a pop-up next to it).
     targets: HomeGestureTargets = remember { HomeGestureTargets() },
+    // How many letters the app list's alphabet has, so the back-gesture exclusion sits on that track. 0: place unknown.
+    letterCount: Int = 0,
     content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current.density
+    val insets = WindowInsets.systemBars
+    val topInsetPx = insets.getTop(LocalDensity.current)
+    val bottomInsetPx = insets.getBottom(LocalDensity.current)
+    val trackBottomPx = with(LocalDensity.current) { ScrubberDefaults.trackBottomPadding(bottomInsetPx.toDp()).roundToPx() }
+    val slotPx = with(LocalDensity.current) { ScrubberDefaults.slotHeight.toPx() }
     val fontScale = LocalDensity.current.fontScale
     // One row's height in px at this font scale, as HomeScreen sizes its rows; the block can be pulled a fraction of it.
     val travelPx = with(LocalDensity.current) { (HomeLayoutDefaults.ROW_HEIGHT_DP * fontScale).dp.toPx() } * RUBBER_BAND_TRAVEL_ROWS
@@ -194,7 +203,7 @@ fun HomeGestureHost(
                 .homeGestures(onSearch, onAppList, onItemPopup, onItemLongPress, targets, enabled, edge, onShade, drag, travelPx, onArmed)
                 // Last in the chain so toggling it never rebuilds the detector mid-gesture. Off while
                 // something covers Home, so the system back gesture works there.
-                .then(if (enabled) Modifier.systemGestureExclusion { homeExclusion(it, density) } else Modifier),
+                .then(if (enabled) Modifier.systemGestureExclusion { homeExclusion(it, density, letterCount, topInsetPx, trackBottomPx, slotPx) } else Modifier),
         ) {
             // An inner box, so the detector's own box (and its hit-testing) stays where it is.
             Box(Modifier.fillMaxSize().graphicsLayer { translationY = drag.offsetPx }) { content() }
@@ -203,9 +212,12 @@ fun HomeGestureHost(
 }
 
 // Without it, gesture navigation takes a swipe on the right edge as back before Home sees it.
-private fun homeExclusion(coordinates: LayoutCoordinates, density: Float): Rect {
+private fun homeExclusion(
+    coordinates: LayoutCoordinates, density: Float, letterCount: Int, topPx: Int, trackBottomPx: Int, slotPx: Float,
+): Rect {
     val size = coordinates.size
-    val r = ScrubberExclusion.homeRects(size.width, size.height, ScrubberExclusion.CAP_DP, density)
+    val track = ScrubberExclusion.trackSpan(size.height, topPx, trackBottomPx, slotPx, letterCount)
+    val r = ScrubberExclusion.homeRects(size.width, size.height, ScrubberExclusion.CAP_DP, density, track)
         .firstOrNull() ?: return Rect.Zero
     return Rect(r.left.toFloat(), r.top.toFloat(), r.right.toFloat(), r.bottom.toFloat())
 }

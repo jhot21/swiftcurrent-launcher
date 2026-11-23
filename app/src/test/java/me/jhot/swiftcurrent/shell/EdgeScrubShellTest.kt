@@ -368,9 +368,21 @@ class EdgeScrubShellTest {
         val deps = start()
         val view = composeView()
         compose.waitForIdle()
-        val expected = ScrubberExclusion.homeRects(view.width, view.height, ScrubberExclusion.CAP_DP, density).single()
-        val rects = view.systemGestureExclusionRects.map { IntRect(it.left, it.top, it.right, it.bottom) }
-        assertTrue("home rect missing from $rects", expected in rects)
+        fun rectsNow() = view.systemGestureExclusionRects.map { IntRect(it.left, it.top, it.right, it.bottom) }
+        val cap = (ScrubberExclusion.CAP_DP * density).toInt()
+        val home = rectsNow().single()
+        assertEquals("the window is as tall as the platform allows", cap, home.height)
+        assertEquals("the window hugs the right edge", view.width, home.right)
+        // The list's own scrubber must declare the same window, so the letters stay covered as the list opens under the finger.
+        compose.runOnUiThread { deps.session.navigate(Screen.AppList) }
+        waitForTag("scrubber")
+        compose.waitForIdle()
+        val inList = rectsNow()
+        assertTrue("home window $home differs from the list's $inList", home in inList)
+        compose.runOnUiThread { deps.session.navigate(Screen.Home) }
+        waitForNoTag("scrubber")
+        compose.waitForIdle()
+        val expected = home
         compose.runOnUiThread { deps.session.navigate(Screen.Search) }
         waitForTag("search-field")
         compose.waitForIdle()

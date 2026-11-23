@@ -86,6 +86,10 @@ object ScrubberDefaults {
 
     /** A lift this far past the track's end still counts as on the end slot; further out is a stray touch. */
     val liftTolerance: Dp = 6.dp
+
+    /** The track's gap above the bottom: the cog lines up with the search button's centre, as in the reference. */
+    fun trackBottomPadding(bottomInset: Dp): Dp =
+        bottomInset + Tokens.searchButtonBottom + Tokens.searchButtonSize / 2 - slotHeight / 2
 }
 
 /** Star, #, the letters that have apps, then the cog. # stays even when empty so the strip keeps its shape. */

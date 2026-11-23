@@ -190,9 +190,7 @@ internal fun AppListScreen(
     val swipe by rememberUpdatedState(onSwipeRight)
     val topInset = with(density) { insets.getTop(density).toDp() }
     val bottomInset = with(density) { insets.getBottom(density).toDp() }
-    // The cog lines up with the search button's centre, as in the reference.
-    val trackBottom = bottomInset + Tokens.searchButtonBottom +
-        Tokens.searchButtonSize / 2 - ScrubberDefaults.slotHeight / 2
+    val trackBottom = ScrubberDefaults.trackBottomPadding(bottomInset)
 
     BoxWithConstraints(Modifier.fillMaxSize().graphicsLayer { translationX = slide.value * size.width }) {
         val stripWidth = maxWidth * ScrubberDefaults.STRIP_FRACTION
@@ -276,7 +274,11 @@ internal fun AppListScreen(
             onStar = { closing = true },
             modifier = Modifier.align(Alignment.TopEnd).width(stripWidth).systemGestureExclusion { c ->
                 val b = IntRect(0, 0, c.size.width, c.size.height)
-                val r = ScrubberExclusion.rects(b, ScrubberExclusion.CAP_DP, density.density).firstOrNull()
+                val track = ScrubberExclusion.trackSpan(
+                    b.height, with(density) { topInset.roundToPx() }, with(density) { trackBottom.roundToPx() },
+                    with(density) { ScrubberDefaults.slotHeight.toPx() }, letters.size,
+                )
+                val r = ScrubberExclusion.rects(b, ScrubberExclusion.CAP_DP, density.density, track).firstOrNull()
                 if (r == null) Rect.Zero else Rect(r.left.toFloat(), r.top.toFloat(), r.right.toFloat(), r.bottom.toFloat())
             },
             state = scrub,

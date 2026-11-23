@@ -67,4 +67,42 @@ class ScrubberExclusionTest {
         assertTrue(ScrubberExclusion.homeRects(0, 2400, 200, 3f).isEmpty())
         assertTrue(ScrubberExclusion.homeRects(1080, 0, 200, 3f).isEmpty())
     }
+
+    @Test
+    fun the_window_is_centred_on_the_letter_track_and_as_tall_as_allowed() {
+        // 2400px screen at 2.625: a 17-slot track of 20dp ends 42dp + nav inset above the bottom.
+        val d = 2.625f
+        val span = ScrubberExclusion.trackSpan(2400, topPx = 80, bottomPx = (66 * d).toInt(), slotPx = 20 * d, count = 17)!!
+        val r = ScrubberExclusion.homeRects(1080, 2400, 200, d, span).single()
+        assertEquals((200 * d).toInt(), r.height)
+        assertTrue(Math.abs((span.first + span.last) / 2 - (r.top + r.bottom) / 2) <= 1)
+    }
+
+    @Test
+    fun a_track_shorter_than_the_cap_is_covered_whole_and_the_window_stays_on_screen() {
+        val d = 2f
+        val span = ScrubberExclusion.trackSpan(2000, 0, 100, 20 * d, count = 5)!!
+        val r = ScrubberExclusion.homeRects(1000, 2000, 200, d, span).single()
+        assertTrue(r.top <= span.first && r.bottom >= span.last)
+        // Near the bottom edge the window is pushed up rather than off screen.
+        val low = ScrubberExclusion.homeRects(1000, 2000, 200, d, 1990..2000).single()
+        assertEquals(2000, low.bottom)
+        assertEquals(400, low.height)
+    }
+
+    @Test
+    fun the_track_span_agrees_with_the_scrubbers_own_geometry() {
+        // The window must sit where the letters are, so drift between the two formulas would show here.
+        for ((h, count) in listOf(2400 to 17, 2400 to 3, 800 to 40, 1500 to 0)) {
+            val slot = 52f
+            val g = me.jhot.swiftcurrent.ui.applist.Geometry(
+                h.toFloat(), 100f, count, slot, 60f, 180f, 1f, 1f, 1f, 1f, 1f,
+            )
+            val span = ScrubberExclusion.trackSpan(h, 60, 180, slot, count)
+            if (count == 0) assertEquals(null, span) else {
+                assertEquals(g.trackTop.toInt(), span!!.first)
+                assertEquals(g.trackBottom.toInt(), span.last)
+            }
+        }
+    }
 }
