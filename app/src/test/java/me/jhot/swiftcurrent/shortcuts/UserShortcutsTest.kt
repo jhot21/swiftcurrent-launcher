@@ -274,4 +274,69 @@ class UserShortcutsTest {
             assertFalse(e.message.isNullOrEmpty())
         }
     }
+
+    private val browser = "org.example.browser"
+    private val link = WebLinks.parse("example.com")!!
+
+    private fun webShortcuts(drawableIcons: DrawableIcons = DrawableIcons { null }, ids: Iterator<String> = listOf("id-1", "id-2").iterator()) =
+        UserShortcuts(starter, messages, taker, BitmapShortcutIcons(context), drawableIcons) { ids.next() }
+
+    private suspend fun UserShortcuts.addLink(pkg: String = browser, name: String = "Example", icon: android.graphics.drawable.Drawable? = null) =
+        addWebLink(pkg, link, name, icon, store::update)
+
+    @Test
+    fun a_web_link_is_stored_for_its_browser_with_the_view_intent() = runBlocking {
+        assertEquals(AddOutcome.Added("id-1"), webShortcuts().addLink())
+        val s = stored()
+        assertEquals(browser, s.appPackage)
+        assertEquals("Example", s.label)
+        assertEquals(WebLinks.intentUri(link, browser), s.intentUri)
+        assertTrue(UserShortcuts.targetsOnly(Intent.parseUri(s.intentUri, Intent.URI_INTENT_SCHEME), browser))
+    }
+
+    @Test
+    fun a_blank_web_link_name_is_stored_as_the_host() = runBlocking {
+        webShortcuts().addLink(name = "   ")
+        assertEquals("example.com", stored().label)
+    }
+
+    @Test
+    fun the_same_web_link_twice_is_a_duplicate_but_two_browsers_are_not() = runBlocking {
+        // A refused duplicate still draws an id, so the third call gets the third one.
+        val s = webShortcuts(ids = listOf("id-1", "id-2", "id-3").iterator())
+        assertEquals(AddOutcome.Added("id-1"), s.addLink())
+        assertEquals(AddOutcome.Duplicate, s.addLink())
+        assertEquals(1, store.data.userShortcuts.size)
+        assertEquals(AddOutcome.Added("id-3"), s.addLink(pkg = "org.other.browser"))
+        assertEquals(2, store.data.userShortcuts.size)
+    }
+
+    @Test
+    fun launching_a_web_link_opens_it_in_its_own_browser() = runBlocking {
+        val s = webShortcuts()
+        s.addLink()
+        assertEquals(LaunchOutcome.Launched, s.launch(stored()))
+        val started = starter.started.single()
+        assertEquals(browser, started.`package`)
+        assertEquals("https://example.com", started.dataString)
+    }
+
+    @Test
+    fun a_web_link_whose_browser_is_gone_reports_not_found_and_opens_nothing_else() = runBlocking {
+        val s = webShortcuts()
+        s.addLink()
+        starter.failWith = ActivityNotFoundException()
+        assertEquals(LaunchOutcome.Failed("gone"), s.launch(stored()))
+        assertTrue(starter.started.isEmpty())
+    }
+
+    @Test
+    fun the_browsers_icon_is_stored_when_it_can_be_encoded_and_left_out_otherwise() = runBlocking {
+        val drawable = android.graphics.drawable.ColorDrawable(0xFF2266AA.toInt())
+        webShortcuts(DrawableIcons { byteArrayOf(1) }).addLink(icon = drawable)
+        assertTrue(byteArrayOf(1).contentEquals(stored().iconBytes))
+        store.update { it.copy(userShortcuts = emptyList()) }
+        webShortcuts().addLink(icon = drawable)
+        assertEquals(null, stored().iconBytes)
+    }
 }

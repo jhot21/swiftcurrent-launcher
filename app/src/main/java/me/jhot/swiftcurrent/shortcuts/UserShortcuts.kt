@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.util.Log
 import me.jhot.swiftcurrent.R
@@ -41,6 +42,11 @@ fun interface ShortcutIcons {
     fun encode(result: Intent): ByteArray?
 }
 
+/** Turns a drawable (an app's icon) into small PNG bytes, or null when it cannot be encoded. */
+fun interface DrawableIcons {
+    fun encode(drawable: Drawable): ByteArray?
+}
+
 /** User-readable launch failures, passed in so the logic stays free of resources. */
 class LaunchMessages(val notFound: String, val notAllowed: String, val unusable: String)
 
@@ -69,6 +75,7 @@ class UserShortcuts(
     private val messages: LaunchMessages,
     private val permissions: UriPermissionTaker = UriPermissionTaker { _, _ -> },
     private val icons: ShortcutIcons = ShortcutIcons { null },
+    private val drawableIcons: DrawableIcons = DrawableIcons { null },
     private val newId: () -> String = { UUID.randomUUID().toString() },
 ) {
     /**
@@ -90,8 +97,21 @@ class UserShortcuts(
             selector = null
             clipData = null
         }
-        val id = newId()
-        val shortcut = UserShortcut(id, pkg, name, clean.toUri(Intent.URI_INTENT_SCHEME), icons.encode(result))
+        val shortcut = UserShortcut(newId(), pkg, name, clean.toUri(Intent.URI_INTENT_SCHEME), icons.encode(result))
+        return store(shortcut, update)
+    }
+
+    /**
+     * Stores a web link as a shortcut of [browserPackage]. The intent is built here, from a validated
+     * [link], and passes the same [targetsOnly] check as any other shortcut. A blank [name] becomes the host.
+     */
+    suspend fun addWebLink(browserPackage: String, link: WebLink, name: String, icon: Drawable?, update: LauncherUpdate): AddOutcome {
+        val label = name.trim().ifEmpty { WebLinks.defaultName(link) }
+        val shortcut = UserShortcut(newId(), browserPackage, label, WebLinks.intentUri(link, browserPackage), icon?.let(drawableIcons::encode))
+        return store(shortcut, update)
+    }
+
+    private suspend fun store(shortcut: UserShortcut, update: LauncherUpdate): AddOutcome {
         // Decided inside the update so two results arriving together cannot both pass the check.
         var duplicate = false
         val written = update { d ->
@@ -105,8 +125,8 @@ class UserShortcuts(
         if (duplicate) return AddOutcome.Duplicate
         // The shell's writer logs a failed write and returns the data it already had, so look for the shortcut
         // rather than assume it was saved; the caller turns this into the same message as any other failure.
-        if (written.userShortcuts.none { it.id == id }) throw java.io.IOException("the shortcut was not saved")
-        return AddOutcome.Added(id)
+        if (written.userShortcuts.none { it.id == shortcut.id }) throw java.io.IOException("the shortcut was not saved")
+        return AddOutcome.Added(shortcut.id)
     }
 
     /** Failures are logged and ignored: a shortcut whose link may lapse is still better than none. */
