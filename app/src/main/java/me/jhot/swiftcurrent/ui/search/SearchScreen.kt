@@ -13,10 +13,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -58,6 +60,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
@@ -83,6 +86,7 @@ import me.jhot.swiftcurrent.ui.design.RowBounds
 import me.jhot.swiftcurrent.ui.design.SheetCard
 import me.jhot.swiftcurrent.ui.design.SheetScaffold
 import me.jhot.swiftcurrent.ui.design.Tokens
+import me.jhot.swiftcurrent.ui.design.cogGlyph
 import me.jhot.swiftcurrent.ui.design.swipeRight
 
 private val CloseDragThreshold = 96.dp
@@ -106,6 +110,8 @@ fun SearchScreen(
     refresh: () -> Unit = {},
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
     onOpenSettings: () -> Unit = {},
+    // Opens search's own settings page from a button beside the field. Null: no button.
+    onSettings: (() -> Unit)? = null,
     // The snapshot test turns the blinking cursor off so the capture is deterministic.
     showCursor: Boolean = true,
     // A swipe to the right on an app result: show that app's menu. Null leaves results with only a tap.
@@ -287,34 +293,36 @@ fun SearchScreen(
                         }
                     },
             ) {
-                Box(
-                    Modifier
-                        .padding(top = 16.dp)
-                        .fillMaxWidth()
-                        .clip(Tokens.pillShape)
-                        .background(Tokens.card)
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                ) {
-                    if (query.isEmpty()) {
-                        AppText(stringResource(R.string.search_hint), style = AppType.body, color = Tokens.dimText)
+                Row(Modifier.padding(top = 16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .clip(Tokens.pillShape)
+                            .background(Tokens.card)
+                            .padding(horizontal = 20.dp, vertical = 14.dp),
+                    ) {
+                        if (query.isEmpty()) {
+                            AppText(stringResource(R.string.search_hint), style = AppType.body, color = Tokens.dimText)
+                        }
+                        BasicTextField(
+                            value = query,
+                            onValueChange = {
+                                query = it
+                                error = null
+                            },
+                            singleLine = true,
+                            textStyle = AppType.body.copy(color = Tokens.text),
+                            cursorBrush = SolidColor(if (showCursor) Tokens.text else Color.Transparent),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            // The keyboard's Search key opens the top result, the one marked with the enter hint.
+                            keyboardActions = KeyboardActions(onSearch = {
+                                // The results on hand answer the query on screen, or they are the last query's: then wait for the right ones.
+                                if (latest.forQuery == query) latest.list.firstOrNull()?.let { run(it, it.primary) } else latest.pendingEnter = query
+                            }),
+                            modifier = Modifier.fillMaxWidth().focusRequester(focus).testTag("search-field"),
+                        )
                     }
-                    BasicTextField(
-                        value = query,
-                        onValueChange = {
-                            query = it
-                            error = null
-                        },
-                        singleLine = true,
-                        textStyle = AppType.body.copy(color = Tokens.text),
-                        cursorBrush = SolidColor(if (showCursor) Tokens.text else Color.Transparent),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        // The keyboard's Search key opens the top result, the one marked with the enter hint.
-                        keyboardActions = KeyboardActions(onSearch = {
-                            // The results on hand answer the query on screen, or they are the last query's: then wait for the right ones.
-                            if (latest.forQuery == query) latest.list.firstOrNull()?.let { run(it, it.primary) } else latest.pendingEnter = query
-                        }),
-                        modifier = Modifier.fillMaxWidth().focusRequester(focus).testTag("search-field"),
-                    )
+                    if (onSettings != null) SettingsButton(onSettings)
                 }
                 error?.let {
                     AppText(
@@ -496,3 +504,17 @@ private fun ResultRow(row: RowModel, onPrimary: (String) -> Unit, onAction: (Str
 /** A long press and a swipe are not discoverable, so the same thing is offered as an accessibility action. */
 private fun Modifier.menuAction(label: String, action: () -> Unit): Modifier =
     semantics { customActions = listOf(CustomAccessibilityAction(label) { action(); true }) }
+
+/** A cog beside the field that opens search's settings; its touch area is a full 48dp even though the ring is small. */
+@Composable
+private fun SettingsButton(onClick: () -> Unit) {
+    val label = stringResource(R.string.search_settings)
+    Box(
+        Modifier.size(48.dp).testTag("search-settings")
+            .clickable(onClickLabel = label, role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        Spacer(Modifier.size(20.dp).cogGlyph(Tokens.dimText, 1.5.dp))
+    }
+}

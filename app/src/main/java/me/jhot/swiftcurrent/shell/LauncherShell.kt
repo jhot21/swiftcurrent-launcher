@@ -510,6 +510,7 @@ private fun ShellContent(deps: LauncherDependencies, model: ShellData, state: Sh
                     },
                     onClose = { session.navigate(Screen.Home) },
                     onOpenSettings = { start(appDetails()) },
+                    onSettings = { state.openSettings(SettingsRoute.Search); session.navigate(Screen.Settings) },
                     contactsDenied = !contactsOk,
                 )
             }
@@ -761,6 +762,7 @@ private fun SearchHost(
     permissions: PermissionRequesterFactory,
     onClose: () -> Unit,
     onOpenSettings: () -> Unit,
+    onSettings: () -> Unit,
     contactsDenied: Boolean,
     onAppMenu: (component: String, bounds: Rect) -> Unit = { _, _ -> },
 ) {
@@ -836,6 +838,7 @@ private fun SearchHost(
         refresh = ::reload,
         dispatcher = io,
         onOpenSettings = onOpenSettings,
+        onSettings = onSettings,
         onResultMenu = { r, bounds -> if (r.id.startsWith("app:")) onAppMenu(r.id.removePrefix("app:"), bounds) },
         onHideAction = { owner, action ->
             // The label and name are kept as they read now: a hidden way is in no result to read them from later.

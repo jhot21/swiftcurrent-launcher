@@ -595,6 +595,16 @@ class LauncherShellTest {
     }
 
     @Test
+    fun the_search_settings_button_opens_the_search_page_of_settings() {
+        val deps = start()
+        swipeUpAt(0.4f)
+        waitForTag("search-field")
+        compose.onNodeWithTag("search-settings").performClick()
+        waitForTag("settings-search")
+        assertEquals(Screen.Settings, deps.session.screen.value)
+    }
+
+    @Test
     fun edge_swipe_up_opens_the_app_list_and_back_closes_it_and_removes_it() {
         val deps = start()
         // Ends on a letter low on the strip; ending at the star or above it would go back to favorites.

@@ -109,6 +109,7 @@ class SearchScreenTest {
         contactsDenied: Boolean = false,
         refresh: () -> Unit = {},
         onOpenSettings: () -> Unit = {},
+        onSettings: (() -> Unit)? = null,
         dispatcher: CoroutineDispatcher = Dispatchers.Unconfined,
         showCursor: Boolean = true,
         onHideAction: (suspend (SearchResult, Action) -> Unit)? = null,
@@ -117,7 +118,7 @@ class SearchScreenTest {
             SearchScreen(
                 engine, access, onClose = { closed++ },
                 contactsDenied = contactsDenied, refresh = refresh, dispatcher = dispatcher,
-                onOpenSettings = onOpenSettings, showCursor = showCursor, onHideAction = onHideAction,
+                onOpenSettings = onOpenSettings, onSettings = onSettings, showCursor = showCursor, onHideAction = onHideAction,
                 onPicked = { r, a, q ->
                     picked += "${r.id}|$q|closed=$closed"
                     pickedActions += "${a.label}|${a.recentId}"
@@ -132,6 +133,30 @@ class SearchScreenTest {
     }
 
     private fun top(tag: String) = compose.onNodeWithTag(tag).getBoundsInRoot().top.value
+
+    @Test
+    fun the_settings_button_beside_the_field_opens_search_settings() {
+        var opened = 0
+        show(onSettings = { opened++ })
+        compose.onNodeWithTag("search-settings").assertIsDisplayed().performClick()
+        assertEquals(1, opened)
+        assertEquals(0, closed)
+    }
+
+    @Test
+    fun without_a_settings_destination_the_field_has_no_button() {
+        show()
+        compose.onAllNodesWithTag("search-settings").assertCountEquals(0)
+    }
+
+    @Test
+    fun the_settings_button_sits_level_with_the_field_and_does_not_cover_it() {
+        show(onSettings = {})
+        val field = compose.onNodeWithTag("search-field").getBoundsInRoot()
+        val button = compose.onNodeWithTag("search-settings").getBoundsInRoot()
+        assertTrue(button.left >= field.right)
+        assertTrue(button.top < field.bottom && button.bottom > field.top)
+    }
 
     @Test
     fun typing_bed_shows_Tasker_Bedtime_and_one_tap_launches_it() {
