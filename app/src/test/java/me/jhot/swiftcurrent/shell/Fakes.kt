@@ -292,4 +292,5 @@ internal class RecordingHaptics : HapticPlayer {
 
 internal class FakeCreators(var list: List<Creator> = emptyList()) : CreatorDiscovery {
     override fun creators() = list
+    override fun icon(creator: Creator): android.graphics.drawable.Drawable? = null
 }

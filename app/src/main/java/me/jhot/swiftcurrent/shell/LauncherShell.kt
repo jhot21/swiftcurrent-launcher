@@ -1098,6 +1098,7 @@ private fun EditorHost(
                 creators = pickable,
                 onPick = { picking = false; create(it) },
                 onDismiss = { picking = false },
+                iconFor = { c -> withContext(io) { deps.creators.icon(c) } },
             )
         }
     }

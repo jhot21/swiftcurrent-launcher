@@ -10,6 +10,8 @@ import android.content.pm.PackageInfo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
@@ -67,5 +69,14 @@ class CreatorDiscoveryTest {
     fun our_own_package_is_not_offered_as_a_creator() {
         install(context.packageName, "Swiftcurrent", "x.Own" to "Own")
         assertEquals(emptyList<Creator>(), PackageManagerCreatorDiscovery(pm, context.packageName).creators())
+    }
+
+    @Test
+    fun a_creator_resolves_to_an_icon_and_an_unknown_one_to_none() {
+        install("pkg.alpha.maps", "Alpha Maps", "pkg.alpha.maps.Directions" to "Directions")
+        val discovery = PackageManagerCreatorDiscovery(pm, context.packageName)
+        val known = discovery.creators().single()
+        assertNotNull(discovery.icon(known))
+        assertNull(discovery.icon(Creator("pkg.gone/pkg.gone.Nope", "Nope", "Gone")))
     }
 }
