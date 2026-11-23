@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -23,6 +24,35 @@ import me.jhot.swiftcurrent.core.UserShortcut
 import me.jhot.swiftcurrent.shortcuts.AddOutcome
 import me.jhot.swiftcurrent.shortcuts.Creator
 import me.jhot.swiftcurrent.shortcuts.RejectReason
+import me.jhot.swiftcurrent.shortcuts.WebLinks
+import me.jhot.swiftcurrent.ui.editor.WebLinkSheet
+
+/** The text for every way an add can end other than success, resolved once so both entry points say the same thing. */
+internal class AddMessages(
+    private val duplicate: String,
+    private val noIntent: String,
+    private val noName: String,
+    private val wrongTarget: String,
+) {
+    /** Null for a success; the message for anything else. */
+    fun of(out: AddOutcome): String? = when (out) {
+        is AddOutcome.Added -> null
+        AddOutcome.Duplicate -> duplicate
+        is AddOutcome.Rejected -> when (out.reason) {
+            RejectReason.MissingIntent -> noIntent
+            RejectReason.MissingName -> noName
+            RejectReason.WrongTarget -> wrongTarget
+        }
+    }
+}
+
+@Composable
+internal fun rememberAddMessages(): AddMessages = AddMessages(
+    duplicate = stringResource(R.string.shortcut_rejected_duplicate),
+    noIntent = stringResource(R.string.shortcut_rejected_no_intent),
+    noName = stringResource(R.string.shortcut_rejected_no_name),
+    wrongTarget = stringResource(R.string.shortcut_rejected_wrong_target),
+)
 
 /**
  * Returns a function that starts a create-shortcut activity and, when it returns a result, stores
@@ -45,10 +75,7 @@ internal fun rememberShortcutCreator(
     val onAddedNow by rememberUpdatedState(onAdded)
     val unavailable = stringResource(R.string.launch_unavailable)
     val failed = stringResource(R.string.search_launch_failed)
-    val noIntent = stringResource(R.string.shortcut_rejected_no_intent)
-    val noName = stringResource(R.string.shortcut_rejected_no_name)
-    val wrongTarget = stringResource(R.string.shortcut_rejected_wrong_target)
-    val duplicate = stringResource(R.string.shortcut_rejected_duplicate)
+    val messages = rememberAddMessages()
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val component = pending
@@ -58,20 +85,11 @@ internal fun rememberShortcutCreator(
         if (component == null || result.resultCode != Activity.RESULT_OK || data == null) return@rememberLauncherForActivityResult
         scope.launch {
             try {
-                when (val out = withContext(io) { deps.userShortcuts.addFromResult(Creator(component, "", ""), data, model::update) }) {
-                    is AddOutcome.Added -> {
-                        model.data.value.userShortcuts.firstOrNull { it.id == out.id }?.let { onAddedNow(it) }
-                    }
-                    AddOutcome.Duplicate -> onMessageNow(ShellMessage.LaunchFailed(duplicate))
-                    is AddOutcome.Rejected -> onMessageNow(
-                        ShellMessage.LaunchFailed(
-                            when (out.reason) {
-                                RejectReason.MissingIntent -> noIntent
-                                RejectReason.MissingName -> noName
-                                RejectReason.WrongTarget -> wrongTarget
-                            },
-                        ),
-                    )
+                val out = withContext(io) { deps.userShortcuts.addFromResult(Creator(component, "", ""), data, model::update) }
+                if (out is AddOutcome.Added) {
+                    model.data.value.userShortcuts.firstOrNull { it.id == out.id }?.let { onAddedNow(it) }
+                } else {
+                    onMessageNow(ShellMessage.LaunchFailed(messages.of(out).orEmpty()))
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -99,4 +117,63 @@ internal fun rememberShortcutCreator(
             }
         }
     }
+}
+
+/** Remembers which browser's Web link form is open, across recreation; null when none is. */
+internal val WebLinkCreatorSaver = androidx.compose.runtime.saveable.Saver<Creator?, List<String>>(
+    save = { c -> c?.let { listOf(it.packageName, it.appLabel, it.label) }.orEmpty() },
+    restore = { l -> if (l.size == 3) Creator.webLink(l[0], l[1], l[2]) else null },
+)
+
+/**
+ * The form behind a browser's Web link row, shown while [creator] is set and saved through
+ * [me.jhot.swiftcurrent.shortcuts.UserShortcuts.addWebLink]. Saving closes the form first, like the rename
+ * sheet; a refused address ends in the same message as any other refused shortcut. The sheet stacks over
+ * its caller, so call this from inside the Box that holds the screen.
+ */
+@Composable
+internal fun WebLinkHost(
+    creator: Creator?,
+    deps: LauncherDependencies,
+    model: ShellData,
+    io: CoroutineDispatcher,
+    onMessage: (ShellMessage) -> Unit,
+    onAdded: suspend (UserShortcut) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val messages = rememberAddMessages()
+    val failed = stringResource(R.string.search_launch_failed)
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    val onMessageNow by rememberUpdatedState(onMessage)
+    val onAddedNow by rememberUpdatedState(onAdded)
+    if (creator == null) return
+    // Read once when the form opens: the text on the clipboard then is what the owner just copied.
+    val copied = remember(creator) { clipboard.getText()?.text }
+    WebLinkSheet(
+        browserLabel = creator.appLabel,
+        clipboardUrl = copied,
+        onDismiss = onDismiss,
+        onSave = { url, name ->
+            val link = WebLinks.parse(url) ?: return@WebLinkSheet
+            onDismiss()
+            scope.launch {
+                try {
+                    val out = withContext(io) {
+                        deps.userShortcuts.addWebLink(creator.packageName, link, name, deps.creators.icon(creator), model::update)
+                    }
+                    if (out is AddOutcome.Added) {
+                        model.data.value.userShortcuts.firstOrNull { it.id == out.id }?.let { onAddedNow(it) }
+                    } else {
+                        onMessageNow(ShellMessage.LaunchFailed(messages.of(out).orEmpty()))
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    android.util.Log.w("ShortcutCreation", "adding the web link failed", e)
+                    onMessageNow(ShellMessage.LaunchFailed(failed))
+                }
+            }
+        },
+    )
 }

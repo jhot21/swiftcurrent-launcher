@@ -194,6 +194,7 @@ internal class FakeDependencies(data: LauncherData, apps: List<AppInfo>, setupSe
     override val userShortcuts = UserShortcuts(
         { userStarts += it; userStartFails?.let { e -> throw e } },
         LaunchMessages("shortcut gone", "shortcut not allowed", "shortcut damaged"),
+        drawableIcons = me.jhot.swiftcurrent.shortcuts.DrawableIcons { byteArrayOf(7) },
     )
     val fakeCalendar = FakeCalendar()
     override val calendar: CalendarRepository = fakeCalendar
@@ -292,5 +293,6 @@ internal class RecordingHaptics : HapticPlayer {
 
 internal class FakeCreators(var list: List<Creator> = emptyList()) : CreatorDiscovery {
     override fun creators() = list
-    override fun icon(creator: Creator): android.graphics.drawable.Drawable? = null
+    override fun icon(creator: Creator): android.graphics.drawable.Drawable? =
+        if (creator.isWebLink) android.graphics.drawable.ColorDrawable(0xFF336699.toInt()) else null
 }

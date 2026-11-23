@@ -2,6 +2,8 @@ package me.jhot.swiftcurrent.shell
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -10,11 +12,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.jhot.swiftcurrent.core.orElse
+import me.jhot.swiftcurrent.shortcuts.Creator
 import me.jhot.swiftcurrent.shortcuts.ShortcutAccess
 import me.jhot.swiftcurrent.shortcuts.ShortcutEntry
 import me.jhot.swiftcurrent.shortcuts.ShortcutPrefs
@@ -76,23 +80,27 @@ fun AppShortcutsHost(
         )
     }
     val create = rememberShortcutCreator(deps, model, io, onMessage) { }
+    var webLinkFor by rememberSaveable(stateSaver = WebLinkCreatorSaver) { mutableStateOf<Creator?>(null) }
     val context = LocalContext.current
 
-    AppShortcutsPage(
-        groups = groups,
-        sources = AppShortcutGroups.sources(contactsGranted, shortcutsGranted),
-        openApp = openApp,
-        onOpenApp = { openApp = it },
-        actions = AppShortcutsActions(
-            onToggle = { key, on -> scope.launch { prefs.setEnabled(key, on) } },
-            onToggleAll = { pkg, on -> scope.launch { prefs.setAll(pkg, on) } },
-            onDelete = { row ->
-                scope.launch { deps.userShortcuts.delete(row.id, model::update) }
-            },
-            onCreate = create,
-            onGrantShortcuts = { start(Intent(Settings.ACTION_HOME_SETTINGS)) },
-            onGrantContacts = { start(appDetailsIntent(context.packageName)) },
-        ),
-        onBack = onBack,
-    )
+    Box(Modifier.fillMaxSize()) {
+        AppShortcutsPage(
+            groups = groups,
+            sources = AppShortcutGroups.sources(contactsGranted, shortcutsGranted),
+            openApp = openApp,
+            onOpenApp = { openApp = it },
+            actions = AppShortcutsActions(
+                onToggle = { key, on -> scope.launch { prefs.setEnabled(key, on) } },
+                onToggleAll = { pkg, on -> scope.launch { prefs.setAll(pkg, on) } },
+                onDelete = { row ->
+                    scope.launch { deps.userShortcuts.delete(row.id, model::update) }
+                },
+                onCreate = { if (it.isWebLink) webLinkFor = it else create(it) },
+                onGrantShortcuts = { start(Intent(Settings.ACTION_HOME_SETTINGS)) },
+                onGrantContacts = { start(appDetailsIntent(context.packageName)) },
+            ),
+            onBack = onBack,
+        )
+        WebLinkHost(webLinkFor, deps, model, io, onMessage, onAdded = { }, onDismiss = { webLinkFor = null })
+    }
 }

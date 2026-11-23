@@ -1766,9 +1766,13 @@ class LauncherShellTest {
 
     private val mapsCreator = Creator("pkg.alpha/pkg.alpha.Friend", "Friend's location", "Alpha")
 
-    private fun startWithCreator(answer: (Intent) -> Intent?, data: LauncherData = LauncherData(favorites = favorites)): Pair<FakeDependencies, FakeRegistryOwner> {
+    private fun startWithCreator(
+        answer: (Intent) -> Intent?,
+        data: LauncherData = LauncherData(favorites = favorites),
+        creators: List<Creator> = listOf(mapsCreator),
+    ): Pair<FakeDependencies, FakeRegistryOwner> {
         val deps = FakeDependencies(data, apps)
-        deps.creators.list = listOf(mapsCreator)
+        deps.creators.list = creators
         val owner = FakeRegistryOwner(answer) { compose.activity }
         compose.setContent {
             androidx.compose.runtime.CompositionLocalProvider(
@@ -1779,13 +1783,76 @@ class LauncherShellTest {
         return deps to owner
     }
 
-    private fun openAddShortcutPicker() {
+    private fun openAddShortcutPicker(creator: Creator = mapsCreator) {
         openFavoritesEditor()
         val at = touchPointOf(EditorSections.ADVANCED)
         compose.onNodeWithTag("scrubber").performTouchInput { down(at); up() }
         waitForTag("action-AddShortcut")
         compose.onNodeWithTag("action-AddShortcut").performClick()
-        waitForTag("creator-${mapsCreator.component}")
+        waitForTag("creator-${creator.component}")
+    }
+
+    private val browserCreator = Creator.webLink("org.example.browser", "Example Browser", "Web link")
+
+    private fun openWebLinkForm(): Pair<FakeDependencies, FakeRegistryOwner> {
+        val started = startWithCreator({ null }, creators = listOf(browserCreator))
+        openAddShortcutPicker(browserCreator)
+        compose.onNodeWithTag("creator-${browserCreator.component}").performClick()
+        waitForTag("web-link-url")
+        return started
+    }
+
+    private fun typeWebLink(url: String, name: String = "") {
+        compose.onNodeWithTag("web-link-url", useUnmergedTree = true).performTextInput(url)
+        if (name.isNotEmpty()) compose.onNodeWithTag("web-link-name", useUnmergedTree = true).performTextInput(name)
+        compose.onNodeWithTag("web-link-save", useUnmergedTree = true).performClick()
+    }
+
+    @Test
+    fun a_browser_gets_a_web_link_row_that_opens_the_form_and_launches_no_activity() {
+        val (_, owner) = openWebLinkForm()
+        assertTrue(owner.launched.isEmpty())
+    }
+
+    @Test
+    fun a_saved_web_link_is_stored_for_its_browser_with_its_icon_and_offered_by_the_editor() {
+        val (deps, _) = openWebLinkForm()
+        typeWebLink("example.com", "Example")
+        compose.waitUntil(5_000) { deps.fakeStore.data.userShortcuts.isNotEmpty() }
+        val made = deps.fakeStore.data.userShortcuts.single()
+        assertEquals("org.example.browser", made.appPackage)
+        assertEquals("Example", made.label)
+        assertTrue(byteArrayOf(7).contentEquals(made.iconBytes))
+        waitForNoTag("web-link-url")
+
+        val pick = "pick-Shortcuts-user/${made.id}"
+        val at = touchPointOf(EditorSections.SHORTCUTS)
+        compose.onNodeWithTag("scrubber").performTouchInput { down(at); up() }
+        waitForTag(pick)
+    }
+
+    @Test
+    fun the_same_web_link_twice_is_refused_with_the_duplicate_message() {
+        val (deps, _) = openWebLinkForm()
+        typeWebLink("example.com", "Example")
+        compose.waitUntil(5_000) { deps.fakeStore.data.userShortcuts.size == 1 }
+        waitForNoTag("web-link-url")
+        compose.onNodeWithTag("action-AddShortcut").performClick()
+        waitForTag("creator-${browserCreator.component}")
+        compose.onNodeWithTag("creator-${browserCreator.component}").performClick()
+        waitForTag("web-link-url")
+        typeWebLink("example.com", "Example")
+        waitForTag("shell-message")
+        compose.onNodeWithText(res(R.string.shortcut_rejected_duplicate)).assertIsDisplayed()
+        assertEquals(1, deps.fakeStore.data.userShortcuts.size)
+    }
+
+    @Test
+    fun dismissing_the_web_link_form_stores_nothing() {
+        val (deps, _) = openWebLinkForm()
+        back()
+        waitForNoTag("web-link-url")
+        assertTrue(deps.fakeStore.data.userShortcuts.isEmpty())
     }
 
     private fun madeResult(name: String? = "Friend Dave") = Intent().apply {
@@ -1863,6 +1930,27 @@ class LauncherShellTest {
         compose.onNodeWithTag("shortcut-toggle-$TASKER/bedtime").assertIsOn().performClick()
         compose.waitUntil(5_000) { deps.fakeStore.data.settings.disabledShortcuts == setOf("$TASKER/bedtime") }
         compose.waitUntil(5_000) { runCatching { compose.onNodeWithTag("shortcut-toggle-$TASKER/bedtime").assertIsOff() }.isSuccess }
+    }
+
+    @Test
+    fun the_per_app_shortcuts_page_makes_a_web_link_for_a_browser_too() {
+        val deps = FakeDependencies(LauncherData(), apps)
+        deps.creators.list = listOf(browserCreator)
+        val model = ShellData(deps, Dispatchers.IO)
+        compose.setContent {
+            LaunchedEffect(model) { model.run() }
+            val ready by model.ready.collectAsState()
+            if (ready) AppShortcutsHost(deps, model, Dispatchers.IO, onBack = {}, onMessage = {})
+        }
+        waitForTag("app-shortcuts-list")
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("Example Browser").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Example Browser").performClick()
+        compose.onNodeWithText(res(R.string.shortcut_web_link)).performClick()
+        waitForTag("web-link-url")
+        typeWebLink("example.com", "Example")
+        compose.waitUntil(5_000) { deps.fakeStore.data.userShortcuts.isNotEmpty() }
+        assertEquals("org.example.browser", deps.fakeStore.data.userShortcuts.single().appPackage)
+        waitForNoTag("web-link-url")
     }
 
     @Test

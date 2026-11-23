@@ -9,6 +9,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.util.Log
+import androidx.core.graphics.drawable.toBitmap
 import me.jhot.swiftcurrent.R
 import me.jhot.swiftcurrent.core.LauncherUpdate
 import me.jhot.swiftcurrent.core.UserShortcut
@@ -197,8 +198,33 @@ class UserShortcuts(
                 ),
                 permissions = { uri, mode -> app.contentResolver.takePersistableUriPermission(uri, mode) },
                 icons = BitmapShortcutIcons(app),
+                drawableIcons = BitmapDrawableIcons(),
             )
         }
+    }
+}
+
+/** Scales [bitmap] down to [ICON_MAX_PX] (never up), keeping its proportions, and encodes it as PNG; null on failure. */
+internal fun encodePng(bitmap: Bitmap): ByteArray? = try {
+    val scale = minOf(1f, ICON_MAX_PX.toFloat() / maxOf(bitmap.width, bitmap.height))
+    val scaled = if (scale < 1f) {
+        Bitmap.createScaledBitmap(
+            bitmap, (bitmap.width * scale).toInt().coerceAtLeast(1), (bitmap.height * scale).toInt().coerceAtLeast(1), true,
+        )
+    } else bitmap
+    ByteArrayOutputStream().also { scaled.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
+} catch (e: Exception) {
+    Log.w("UserShortcuts", "could not encode the icon", e)
+    null
+}
+
+/** Draws an app's icon at [ICON_MAX_PX] and stores it as PNG, for a shortcut we make ourselves. */
+class BitmapDrawableIcons : DrawableIcons {
+    override fun encode(drawable: Drawable): ByteArray? = try {
+        encodePng(drawable.toBitmap(ICON_MAX_PX, ICON_MAX_PX))
+    } catch (e: Exception) {
+        Log.w("UserShortcuts", "could not draw the icon", e)
+        null
     }
 }
 
@@ -212,18 +238,7 @@ class BitmapShortcutIcons(private val context: Context) : ShortcutIcons {
             Log.w("UserShortcuts", "could not read the icon", e)
             null
         } ?: return null
-        return try {
-            val scale = minOf(1f, ICON_MAX_PX.toFloat() / maxOf(bitmap.width, bitmap.height))
-            val scaled = if (scale < 1f) {
-                Bitmap.createScaledBitmap(
-                    bitmap, (bitmap.width * scale).toInt().coerceAtLeast(1), (bitmap.height * scale).toInt().coerceAtLeast(1), true,
-                )
-            } else bitmap
-            ByteArrayOutputStream().also { scaled.compress(Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
-        } catch (e: Exception) {
-            Log.w("UserShortcuts", "could not encode the icon", e)
-            null
-        }
+        return encodePng(bitmap)
     }
 
     private fun fromResource(result: Intent): Bitmap? {

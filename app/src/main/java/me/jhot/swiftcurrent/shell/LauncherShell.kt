@@ -66,6 +66,7 @@ import me.jhot.swiftcurrent.core.Popup
 import me.jhot.swiftcurrent.core.PopupRow
 import me.jhot.swiftcurrent.core.Renames
 import me.jhot.swiftcurrent.core.Target
+import me.jhot.swiftcurrent.core.UserShortcut
 import me.jhot.swiftcurrent.core.orElse
 import me.jhot.swiftcurrent.lock.DoubleTapDetector
 import me.jhot.swiftcurrent.lock.LockResult
@@ -1023,11 +1024,13 @@ private fun EditorHost(
         }
         var picking by remember { mutableStateOf(false) }
         var pickable by remember { mutableStateOf<List<Creator>?>(null) }
-        val create = rememberShortcutCreator(deps, model, io, onMessage) { made ->
+        val onMade: suspend (UserShortcut) -> Unit = { made ->
             val app = apps.firstOrNull { it.packageName == made.appPackage }?.label
                 ?: withContext(io) { deps.packageLabel(made.appPackage) } ?: made.appPackage
             state.addShortcutCandidate(ShortcutCandidate(userShortcutKey(made.id), made.label, app))
         }
+        val create = rememberShortcutCreator(deps, model, io, onMessage, onMade)
+        var webLinkFor by rememberSaveable(stateSaver = WebLinkCreatorSaver) { mutableStateOf<Creator?>(null) }
         LaunchedEffect(picking) {
             if (picking && pickable == null) {
                 pickable = orElse(emptyList()) {
@@ -1096,11 +1099,12 @@ private fun EditorHost(
         if (picking) {
             CreatorPicker(
                 creators = pickable,
-                onPick = { picking = false; create(it) },
+                onPick = { picking = false; if (it.isWebLink) webLinkFor = it else create(it) },
                 onDismiss = { picking = false },
                 iconFor = { c -> withContext(io) { deps.creators.icon(c) } },
             )
         }
+        WebLinkHost(webLinkFor, deps, model, io, onMessage, onMade, onDismiss = { webLinkFor = null })
     }
 }
 
