@@ -1809,6 +1809,17 @@ class LauncherShellTest {
     }
 
     @Test
+    fun a_web_link_is_found_in_search_by_its_address() {
+        val link = me.jhot.swiftcurrent.shortcuts.WebLinks.parse("https://github.com/jhot21")!!
+        val shortcut = UserShortcut(
+            "w1", "pkg.alpha", "Code", me.jhot.swiftcurrent.shortcuts.WebLinks.intentUri(link, "pkg.alpha"),
+        )
+        val deps = start(LauncherData(favorites = favorites, userShortcuts = listOf(shortcut)))
+        searchFor(deps, "github")
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("Alpha: Code").fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test
     fun a_browser_gets_a_web_link_row_that_opens_the_form_and_launches_no_activity() {
         val (_, owner) = openWebLinkForm()
         assertTrue(owner.launched.isEmpty())

@@ -12,6 +12,7 @@ import me.jhot.swiftcurrent.shortcuts.ShortcutEntry
 import me.jhot.swiftcurrent.shortcuts.ShortcutFilter
 import me.jhot.swiftcurrent.shortcuts.ShortcutProvider
 import me.jhot.swiftcurrent.shortcuts.WebLinks
+import me.jhot.swiftcurrent.shortcuts.webLinkDisplay
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -117,7 +118,7 @@ class UserShortcutSourceTest {
 
     @Test
     fun a_row_is_kept_between_keystrokes_with_its_folded_label() {
-        val source = UserShortcutSource({ list }, labels::get, { LaunchOutcome.Launched })
+        val source = UserShortcutSource({ list }, labels::get, { LaunchOutcome.Launched }, addressOf = ::webLinkDisplay)
         val first = runBlocking { source.search("bob") }.single()
         val second = runBlocking { source.search("bo") }.single { it.id == first.id }
         assertTrue("same row, folded once", first === second)
@@ -136,7 +137,7 @@ class UserShortcutSourceTest {
         val labels = mapOf(browser to "Example Browser", "pkg.alpha.maps" to "Alpha Maps")
         listOf("gith", "github.com", "jhot21", "code").forEach { q ->
             list = listOf(code, geo, damaged)
-            val found = Ranking.order(q, runBlocking { UserShortcutSource({ list }, labels::get, { LaunchOutcome.Launched }).search(q) })
+            val found = Ranking.order(q, runBlocking { UserShortcutSource({ list }, labels::get, { LaunchOutcome.Launched }, addressOf = ::webLinkDisplay).search(q) })
             assertEquals("query '$q'", listOf("Example Browser: Code"), found.map { it.label })
         }
     }
@@ -144,7 +145,7 @@ class UserShortcutSourceTest {
     @Test
     fun the_address_is_carried_as_the_alias_and_other_shortcuts_have_none() {
         val labels = mapOf(browser to "Example Browser")
-        val src = UserShortcutSource({ listOf(code, geo) }, labels::get, { LaunchOutcome.Launched })
+        val src = UserShortcutSource({ listOf(code, geo) }, labels::get, { LaunchOutcome.Launched }, addressOf = ::webLinkDisplay)
         assertEquals("github.com/jhot21", Ranking.order("gith", runBlocking { src.search("gith") }).single().alias)
         assertNull(Ranking.order("bob", runBlocking { src.search("bob") }).single().alias)
     }
@@ -152,7 +153,7 @@ class UserShortcutSourceTest {
     @Test
     fun a_damaged_web_link_has_no_alias_and_is_still_found_by_name() {
         val labels = mapOf(browser to "Example Browser")
-        val src = UserShortcutSource({ listOf(damaged) }, labels::get, { LaunchOutcome.Launched })
+        val src = UserShortcutSource({ listOf(damaged) }, labels::get, { LaunchOutcome.Launched }, addressOf = ::webLinkDisplay)
         val found = Ranking.order("broken", runBlocking { src.search("broken") })
         assertEquals(listOf("Example Browser: Broken"), found.map { it.label })
         assertNull(found.single().alias)

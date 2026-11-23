@@ -96,6 +96,7 @@ import me.jhot.swiftcurrent.shortcuts.ShortcutEntry
 import me.jhot.swiftcurrent.shortcuts.ShortcutFilter
 import me.jhot.swiftcurrent.shortcuts.userShortcutId
 import me.jhot.swiftcurrent.shortcuts.userShortcutKey
+import me.jhot.swiftcurrent.shortcuts.webLinkDisplay
 import me.jhot.swiftcurrent.shortcuts.withoutShortcut
 import me.jhot.swiftcurrent.ui.agenda.AgendaSheet
 import me.jhot.swiftcurrent.ui.applist.AppListScreen
@@ -182,6 +183,8 @@ internal fun searchSources(
             filter = filter,
             // The shell publishes a new list when the installed apps or their names change.
             labelsVersion = apps,
+            // A web link is also found by its address.
+            addressOf = ::webLinkDisplay,
         ),
         ContactSource(deps.contacts, deps::contactsGranted, strings, io, ContactActionFactory { launchContactAction(deps, it, askPermission) }),
         EventSource(

@@ -10,7 +10,6 @@ import me.jhot.swiftcurrent.search.SearchResult
 import me.jhot.swiftcurrent.search.SearchSource
 import me.jhot.swiftcurrent.shortcuts.ShortcutFilter
 import me.jhot.swiftcurrent.shortcuts.userShortcutKey
-import me.jhot.swiftcurrent.shortcuts.webLinkDisplay
 
 /**
  * The shortcuts the owner made, as "App: name" results beside the system's. [shortcuts] is read on
@@ -25,6 +24,11 @@ class UserShortcutSource(
     private val launch: (UserShortcut) -> LaunchOutcome,
     private val filter: ShortcutFilter = ShortcutFilter.All,
     private val labelsVersion: () -> Any = {},
+    /**
+     * The address a shortcut can also be found by (a web link's), or null. Injected, not looked up here, so
+     * this source stays free of Android's Intent; the shell passes [webLinkDisplay].
+     */
+    private val addressOf: (UserShortcut) -> String? = { null },
 ) : SearchSource {
     override val name = "Shortcuts"
 
@@ -73,7 +77,7 @@ class UserShortcutSource(
             kind = Kind.Shortcut,
             icon = icon,
             primary = Action(label, icon) { launch(s) },
-            alias = webLinkDisplay(s),
+            alias = addressOf(s),
         )
     }
 }

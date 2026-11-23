@@ -22,7 +22,7 @@ core/        items, favorites state, backup, LauncherStore; db/ is the Room usag
 catalog/     installed-app catalog, sections, usage
 context/     device context for conditional favorites: Bluetooth devices, Meld modes, ContextMonitor
 search/      SearchSource, engine, ranking, learning; sources/ (apps, shortcuts, contacts, events)
-shortcuts/   shortcut index, user shortcuts, creator discovery, pin requests
+shortcuts/   shortcut index, user shortcuts, web links, creator discovery, pin requests
 agenda/      calendar repository, event occurrences and formatting
 lock/        lock service and controller, double-tap detection, screen-reset receiver
 shell/       LauncherShell (the root composable), ShellState, the dependencies it is given
