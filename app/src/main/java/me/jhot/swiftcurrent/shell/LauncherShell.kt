@@ -517,7 +517,7 @@ private fun ShellContent(deps: LauncherDependencies, model: ShellData, state: Sh
                     },
                     onClose = { session.navigate(Screen.Home) },
                     onOpenSettings = { start(appDetails()) },
-                    onSettings = { state.openSettings(SettingsRoute.Search); session.navigate(Screen.Settings) },
+                    onSettings = { state.openSettings(SettingsRoute.Search, fromSearch = true); session.navigate(Screen.Settings) },
                     contactsDenied = !contactsOk,
                 )
             }
@@ -560,7 +560,7 @@ private fun ShellContent(deps: LauncherDependencies, model: ShellData, state: Sh
                 val nav = remember { state.settingsNav() }
                 SettingsHost(
                     deps = deps, model = model, io = io, nav = nav,
-                    onExit = { session.navigate(Screen.AppList) },
+                    onExit = { session.navigate(state.settingsExit()) },
                     onFavorites = { openEditor(EditorTarget.Favorites) },
                     onSetup = { state.openSettings(SettingsRoute.Advanced); session.openSetup(SetupOrigin.Settings) },
                     onMessage = state::showMessage,

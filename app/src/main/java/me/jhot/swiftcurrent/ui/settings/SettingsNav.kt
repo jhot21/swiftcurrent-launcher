@@ -19,10 +19,12 @@ val SETTINGS_TOPICS: List<SettingsRoute> =
 
 /**
  * Where Settings is. Back goes to the parent page; [back] returns false from the root, where the
- * caller leaves Settings for whatever opened it. Opening a page at [start] (the editor sends the
+ * caller leaves Settings for whatever opened it. With [exitAtStart] the page it opened on counts as that root. Opening a page at [start] (the editor sends the
  * owner straight to hidden apps) still has its parents behind it.
  */
-class SettingsNav(start: SettingsRoute = SettingsRoute.Root) {
+class SettingsNav(start: SettingsRoute = SettingsRoute.Root, private val exitAtStart: Boolean = false) {
+    private val first = start
+
     private val _current = MutableStateFlow(start)
     val current: StateFlow<SettingsRoute> = _current.asStateFlow()
 
@@ -31,6 +33,8 @@ class SettingsNav(start: SettingsRoute = SettingsRoute.Root) {
     }
 
     fun back(): Boolean {
+        // Opened straight onto a page from somewhere that is not Settings: back from it leaves, it does not wander up the tree.
+        if (exitAtStart && _current.value == first) return false
         val parent = _current.value.parent ?: return false
         _current.value = parent
         return true

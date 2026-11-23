@@ -55,15 +55,21 @@ class ShellState {
     // Kept here, not in composition, so an activity recreation does not drop the owner's place in Settings.
     private var settingsNav: SettingsNav? = null
     private var settingsStart = SettingsRoute.Root
+    private var settingsFromSearch = false
 
     /** Where Settings opens next: its front page from the app list, a deeper page when something sends the owner there. */
-    fun openSettings(start: SettingsRoute) {
+    fun openSettings(start: SettingsRoute, fromSearch: Boolean = false) {
         settingsStart = start
-        settingsNav = SettingsNav(start)
+        settingsFromSearch = fromSearch
+        settingsNav = SettingsNav(start, exitAtStart = fromSearch)
     }
 
+    /** Where leaving Settings goes: Home when it was opened from search, else the app list. */
+    fun settingsExit(): Screen = if (settingsFromSearch) Screen.Home else Screen.AppList
+
     /** The page stack of the Settings visit in progress. */
-    fun settingsNav(): SettingsNav = settingsNav ?: SettingsNav(settingsStart).also { settingsNav = it }
+    fun settingsNav(): SettingsNav =
+        settingsNav ?: SettingsNav(settingsStart, exitAtStart = settingsFromSearch).also { settingsNav = it }
 
     /** Bumped on each visit from Home so the app list starts at the top; a recreation does not bump it. */
     var listVisit = 0

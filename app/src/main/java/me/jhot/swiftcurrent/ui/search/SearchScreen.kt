@@ -86,7 +86,7 @@ import me.jhot.swiftcurrent.ui.design.RowBounds
 import me.jhot.swiftcurrent.ui.design.SheetCard
 import me.jhot.swiftcurrent.ui.design.SheetScaffold
 import me.jhot.swiftcurrent.ui.design.Tokens
-import me.jhot.swiftcurrent.ui.design.cogGlyph
+import me.jhot.swiftcurrent.ui.design.gearGlyph
 import me.jhot.swiftcurrent.ui.design.swipeRight
 
 private val CloseDragThreshold = 96.dp
@@ -515,6 +515,6 @@ private fun SettingsButton(onClick: () -> Unit) {
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
-        Spacer(Modifier.size(20.dp).cogGlyph(Tokens.dimText, 1.5.dp))
+        Spacer(Modifier.size(24.dp).gearGlyph(Tokens.dimText, 1.5.dp))
     }
 }

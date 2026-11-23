@@ -100,6 +100,32 @@ fun Modifier.cogGlyph(color: Color, width: Dp): Modifier = drawBehind {
     drawCircle(color, radius = size.minDimension / 2f - stroke / 2f, style = Stroke(stroke))
 }
 
+/** A gear: a toothed outline around a hub, so it reads as settings where [cogGlyph]'s bare ring would not. */
+fun Modifier.gearGlyph(color: Color, width: Dp, teeth: Int = 8): Modifier = drawWithCache {
+    val stroke = width.toPx()
+    val c = size.center
+    val outer = size.minDimension / 2f - stroke
+    val inner = outer * 0.76f
+    // Each tooth is a flat-topped trapezoid: [half] radians wide at the root, narrower at the tip.
+    val half = (PI / teeth * 0.5).toFloat()
+    val path = Path().apply {
+        for (i in 0 until teeth) {
+            val a = (2 * PI * i / teeth).toFloat()
+            val pts = listOf(a - half to inner, a - half * 0.6f to outer, a + half * 0.6f to outer, a + half to inner)
+            pts.forEachIndexed { k, (ang, r) ->
+                val x = c.x + r * cos(ang)
+                val y = c.y + r * sin(ang)
+                if (i == 0 && k == 0) moveTo(x, y) else lineTo(x, y)
+            }
+        }
+        close()
+    }
+    onDrawBehind {
+        drawPath(path, color, style = Stroke(stroke, join = StrokeJoin.Round))
+        drawCircle(color, radius = inner * 0.42f, center = c, style = Stroke(stroke))
+    }
+}
+
 /** A magnifier: a ring with a handle to the bottom right. */
 fun Modifier.searchGlyph(color: Color, width: Dp): Modifier = drawBehind {
     val stroke = width.toPx()

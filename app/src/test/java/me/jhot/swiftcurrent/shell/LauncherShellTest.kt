@@ -602,6 +602,11 @@ class LauncherShellTest {
         compose.onNodeWithTag("search-settings").performClick()
         waitForTag("settings-search")
         assertEquals(Screen.Settings, deps.session.screen.value)
+        // Back goes straight home to the favorites, not up through all of Settings to the app list.
+        back()
+        waitForNoTag("settings-search")
+        assertEquals(Screen.Home, deps.session.screen.value)
+        compose.onNodeWithTag("clock").assertIsDisplayed()
     }
 
     @Test

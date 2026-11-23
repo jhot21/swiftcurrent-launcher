@@ -30,6 +30,18 @@ class SettingsNavTest {
     }
 
     @Test
+    fun a_nav_that_exits_at_its_start_leaves_instead_of_going_up() {
+        val nav = SettingsNav(SettingsRoute.Search, exitAtStart = true)
+        assertFalse(nav.back())
+        assertEquals(SettingsRoute.Search, nav.current.value)
+        // Deeper pages still go up, and the start is the end of the line.
+        nav.open(SettingsRoute.Shortcuts)
+        assertTrue(nav.back())
+        assertEquals(SettingsRoute.Search, nav.current.value)
+        assertFalse(nav.back())
+    }
+
+    @Test
     fun the_topics_are_home_apps_search_gestures_advanced_in_order() {
         assertEquals(
             listOf(SettingsRoute.Home, SettingsRoute.Apps, SettingsRoute.Search, SettingsRoute.Gestures, SettingsRoute.Advanced),
