@@ -273,12 +273,7 @@ internal fun AppListScreen(
             // The star is the way back to favorites: the same slide Back runs, then onClose.
             onStar = { closing = true },
             modifier = Modifier.align(Alignment.TopEnd).width(stripWidth).systemGestureExclusion { c ->
-                val b = IntRect(0, 0, c.size.width, c.size.height)
-                val track = ScrubberExclusion.trackSpan(
-                    b.height, with(density) { topInset.roundToPx() }, with(density) { trackBottom.roundToPx() },
-                    with(density) { ScrubberDefaults.slotHeight.toPx() }, letters.size,
-                )
-                val r = ScrubberExclusion.rects(b, ScrubberExclusion.CAP_DP, density.density, track).firstOrNull()
+                val r = ScrubberExclusion.rects(IntRect(0, 0, c.size.width, c.size.height)).firstOrNull()
                 if (r == null) Rect.Zero else Rect(r.left.toFloat(), r.top.toFloat(), r.right.toFloat(), r.bottom.toFloat())
             },
             state = scrub,

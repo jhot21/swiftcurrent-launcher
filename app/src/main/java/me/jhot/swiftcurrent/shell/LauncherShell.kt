@@ -101,7 +101,6 @@ import me.jhot.swiftcurrent.shortcuts.withoutShortcut
 import me.jhot.swiftcurrent.ui.agenda.AgendaSheet
 import me.jhot.swiftcurrent.ui.applist.AppListScreen
 import me.jhot.swiftcurrent.ui.applist.EdgeScrub
-import me.jhot.swiftcurrent.ui.applist.scrubberLetters
 import me.jhot.swiftcurrent.ui.design.Tokens
 import me.jhot.swiftcurrent.ui.editor.Candidates
 import me.jhot.swiftcurrent.ui.editor.CreatorPicker
@@ -435,11 +434,6 @@ private fun ShellContent(deps: LauncherDependencies, model: ShellData, state: Sh
         )
     }
 
-    // Only the letters matter here (the list's own order is built when it opens), so no usage counts are read.
-    val alphabetSize = remember(apps, data.hiddenApps) {
-        scrubberLetters(AppSections.build(apps, data.hiddenApps, emptyMap(), false)).size
-    }
-
     Box(Modifier.fillMaxSize().background(Tokens.black)) {
         // Home stays composed under the other screens so a closing list slides off it, but it is
         // hidden from accessibility and its gestures are off while anything covers it.
@@ -455,7 +449,6 @@ private fun ShellContent(deps: LauncherDependencies, model: ShellData, state: Sh
                 onItemLongPress = { entry -> gestureTick(); state.openActionSheet(entry) },
                 enabled = ShellState.gesturesEnabled(screen, overlay),
                 edge = edgeSwipe,
-                letterCount = alphabetSize,
                 // Best effort: the call can do nothing, and the tick has already played when the pull armed.
                 onShade = { deps.expandNotifications() },
             ) {

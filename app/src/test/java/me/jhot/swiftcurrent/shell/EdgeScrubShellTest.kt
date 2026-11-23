@@ -369,11 +369,10 @@ class EdgeScrubShellTest {
         val view = composeView()
         compose.waitForIdle()
         fun rectsNow() = view.systemGestureExclusionRects.map { IntRect(it.left, it.top, it.right, it.bottom) }
-        val cap = (ScrubberExclusion.CAP_DP * density).toInt()
         val home = rectsNow().single()
-        assertEquals("the window is as tall as the platform allows", cap, home.height)
-        assertEquals("the window hugs the right edge", view.width, home.right)
-        // The list's own scrubber must declare the same window, so the letters stay covered as the list opens under the finger.
+        assertEquals("the whole strip is excluded, top to bottom", view.height, home.height)
+        assertEquals("the strip hugs the right edge", view.width, home.right)
+        // The list's own scrubber must declare the same strip, so the letters stay covered as the list opens under the finger.
         compose.runOnUiThread { deps.session.navigate(Screen.AppList) }
         waitForTag("scrubber")
         compose.waitForIdle()
