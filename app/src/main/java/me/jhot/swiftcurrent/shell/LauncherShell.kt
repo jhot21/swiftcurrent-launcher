@@ -1035,7 +1035,7 @@ private fun EditorHost(
         val onMade: suspend (UserShortcut) -> Unit = { made ->
             val app = apps.firstOrNull { it.packageName == made.appPackage }?.label
                 ?: withContext(io) { deps.packageLabel(made.appPackage) } ?: made.appPackage
-            state.addShortcutCandidate(ShortcutCandidate(userShortcutKey(made.id), made.label, userShortcutAppLabel(made, app)))
+            state.addShortcutCandidate(ShortcutCandidate(userShortcutKey(made.id), made.label, userShortcutAppLabel(made, app)), select = popupEntry != null)
         }
         val create = rememberShortcutCreator(deps, model, io, onMessage, onMade)
         var webLinkFor by rememberSaveable(stateSaver = WebLinkCreatorSaver) { mutableStateOf<Creator?>(null) }

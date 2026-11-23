@@ -110,10 +110,12 @@ class ItemEditorState(
     val shortcutCandidates: List<ShortcutCandidate>
         get() = candidates.shortcuts + addedShortcuts.filter { a -> candidates.shortcuts.none { it.key == a.key } }
 
-    /** Offers a shortcut that did not exist when the editor opened (one just made). It is not selected. */
-    fun addShortcutCandidate(c: ShortcutCandidate) {
+    /** Offers a shortcut that did not exist when the editor opened (one just made). It is not selected unless [select]. */
+    fun addShortcutCandidate(c: ShortcutCandidate, select: Boolean = false) {
         if (shortcutCandidates.none { it.key == c.key }) {
             addedShortcuts.add(c)
+            // A pop-up being edited is what the owner made it for, so it goes straight in.
+            if (select) toggle(EditorSections.shortcutEntry(c))
             // Opened so the new row is seen: in a collapsed group it would look as if nothing was added.
             groupOverrides[c.appLabel] = true
         }

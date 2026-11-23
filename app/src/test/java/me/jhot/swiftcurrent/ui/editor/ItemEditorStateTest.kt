@@ -249,6 +249,18 @@ class ItemEditorStateTest {
     }
 
     @Test
+    fun a_shortcut_made_for_a_popup_can_be_added_to_it_at_once() {
+        val seen = mutableListOf<List<PopupRow>>()
+        val s = state(listOf("Alpha"), capacity = null, onChange = { seen += it })
+        val made = ShortcutCandidate("user/u1", "Friend Bob", "Gmail")
+        s.addShortcutCandidate(made, select = true)
+        // Offered again (a repeat result) it is not toggled back off.
+        s.addShortcutCandidate(made, select = true)
+        assertEquals(listOf("fav-alpha", "user/u1"), ids(s))
+        assertEquals(1, seen.size)
+    }
+
+    @Test
     fun every_change_is_reported_live() {
         val seen = mutableListOf<List<PopupRow>>()
         val s = state(listOf("Alpha", "Bravo"), capacity = 3, ownApp = null, onChange = { seen += it })
