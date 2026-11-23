@@ -33,13 +33,12 @@ private const val SCRIM_ALPHA = 0.6f
 /**
  * Bottom sheet with a scrim: large top radius, large light title, content below. Tapping the
  * scrim or pressing back calls [onDismiss], so closing always lands on the screen underneath.
+ * The handle and title stay in place and only [content] scrolls, whatever its length.
  */
 @Composable
 fun SheetScaffold(
     title: String,
     onDismiss: () -> Unit,
-    /** Keep the handle and title in place and scroll only [content], for long lists. */
-    pinHeader: Boolean = false,
     /** A control at the end of the title row, such as an add button. */
     action: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
@@ -65,7 +64,6 @@ fun SheetScaffold(
                 .navigationBarsPadding()
                 // A sheet with a text field rises above the keyboard; without one this adds nothing.
                 .imePadding()
-                .then(if (pinHeader) Modifier else Modifier.verticalScroll(rememberScrollState()))
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -78,15 +76,11 @@ fun SheetScaffold(
                     action?.invoke()
                 }
             }
-            if (pinHeader) {
-                Column(
-                    Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    content = content,
-                )
-            } else {
-                content()
-            }
+            Column(
+                Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                content = content,
+            )
         }
     }
 }

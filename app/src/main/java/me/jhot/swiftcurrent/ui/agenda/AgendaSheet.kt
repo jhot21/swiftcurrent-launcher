@@ -76,7 +76,6 @@ fun AgendaSheet(
     }
     SheetScaffold(
         title = stringResource(R.string.agenda_title), onDismiss = onDismiss,
-        pinHeader = true,
         action = { NewEventButton { onNewEvent(LocalDate.ofInstant(now, zone)) } },
     ) {
         Column(Modifier.testTag("agenda-sheet"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
